@@ -1,0 +1,6 @@
+[submodule "mapfl"]
+	path = mapfl
+	url = https://github.com/predsci/mapfl
+[submodule "pot3d"]
+	path = pot3d
+	url = https://github.com/predsci/pot3d
