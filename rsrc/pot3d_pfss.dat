@@ -14,7 +14,7 @@
 !
 ! Input options.
 !
-  br0file='br_input.h5'
+  br0file='br_input_tp.h5'
   phishift=0.0
   do_not_balance_flux=.false.
 !

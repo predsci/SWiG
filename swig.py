@@ -1,18 +1,98 @@
 #!/usr/bin/env python3
+import os
+import sys
+import numpy as np
+import argparse
 
-# SWiG:  Solar Wind Generato
+##############################
+# SWiG:  Solar Wind Generator
 #        Generate solar wind quantities using PFSS+CS magnetic fields combined
 #        with emperical solar wind models.
+#############################
+
+def argParsing():
+  parser = argparse.ArgumentParser(description='Generate solar wind quantities using PFSS+CS magnetic fields combined with emperical solar wind models.')
+
+  parser.add_argument('rundir',
+    help='Directory where run will go.',
+    dest='rundir',
+    type=str)
+
+  parser.add_argument('input_map',
+    help='Input Br full-Sun magnetogram.',
+    dest='br_input_file',
+    type=str)
+
+  parser.add_argument('-np',
+    help='Number of MPI processes (ranks)',
+    dest='np',
+    type=int,
+    default=1,
+    required=False)
+
+  parser.add_argument('-sw_model',
+    help='Select solar wind model.',
+    dest='sw_model',
+    type=str,
+    default='wsa2',
+    required=False)
+
+  parser.add_argument('-gpu',
+    help='Indicate that POT3D will be run on GPUs.',
+    dest='gpu',
+    action='store_true',
+    default=False,
+    required=False)
+
+  return parser.parse_args()
+
+def run(args):
+
+  # Get path of the SWiG directory
+
+  swigdir = sys.path[0]
+
+  # Make rundir and go there
+  os.makedirs(args.rundir, exist_ok=True)
+  os.chdir(args.rundir)
+
+  # Run PF model.
+
+  os.system(swigdir+'/bin/cor_pfss_cs_pot3d.py '+args.br_input_file+' -np '+args.np)
+
+  # Analyze and compute required quantities from model.
+
+  os.system(swigdir+'/bin/mag_trace_analysis.py '+args.rundir)
+
+  # Make results folder.
+  os.makedirs(args.rundir+'/results', exist_ok=True)
+  os.chdir(args.rundir+'/results')
+
+  # Generate solar wind model.
+
+  os.system(swigdir+'/bin/eswim.py -dchb '+args.rundir+'/dchb_r1.h5'+\
+             '-expfac '+args.rundir+'/expfac_r1_r0.h5 -model '+args.sw_model)
+
+  # Copy other results and plot everything.
+
+  #  .....
 
 
+def main():
+  args = argParsing()
+  run(args)
 
+if __name__ == '__main__':
+  main()
 
-#  Add option to plot everything using plot2d, etc.
-
-# Get runname and make folder.
-# Inside make a results folder for the solar wind and other quatities.
-
-
+########################################################################
+#
+# ### CHANGELOG
+#
+# ### Version 1.0.0, 04/18/2024, modified by RC:
+#       - Initial versioned version.
+#
+########################################################################
 
 
 
@@ -35,25 +115,8 @@
 # V2  2D Expansion factors and distance to OF boundaries at r0, rss, and r1
 
 # Input: Required vs Optional
-#  Required:
-#   br file (does not further process it - so assumes final map - auto transpose, auto sinlat detection)
-#  Optional:
-#   r0  : (default 1) lower radius for OF tracing and expansion factor (able to compinsate for high res data)
 #   rss : (default 2.5) rss radius (default r resolutions based on 2.5...)
-#   rss overlap??   Make PFSS rss be rss+overlap, than extract rss slice (interp?)
 #   r1  : (default 21.5) outer radius for solar wind data calucaltion and outer radius of CS model
-#   gridstyle : psi vs wsa : Determines tracing grid..  maybe have this be pt grid template instead?
-#   mapping_res_multiplier : resoluton of mapping (default is 2x)?
-#   verbosity : output level V0, V1, V2
-#   plot on/off (default on) : Decide to plot all 2D quantities or not
-#   
-
-#  cor_pfss_cs_pot3d.py
-#  mag_trace_analysis.py
-#  eswim.py
-
-
-
 
 
 

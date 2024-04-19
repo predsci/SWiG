@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-import argparse
 import os
-import numpy as np
 import sys
+import numpy as np
+import argparse
 #
 import psih5 as ps
 
@@ -13,9 +13,8 @@ import psih5 as ps
 def argParsing():
   parser = argparse.ArgumentParser(description='Generate PFSS and CS solutions given an input magnetic full-Sun map.')
 
-  parser.add_argument('br_input',
+  parser.add_argument('br_input_file',
     help='Br map input file',
-    dest='br_input_file',
     type=str)
 
   parser.add_argument('-np',
@@ -46,7 +45,7 @@ def argParsing():
     default=21.5,
     required=False)
     
-  parser.add_argument('-pot',
+  parser.add_argument('-pot3d_exe',
     help='Full path to POT3D executable (only needed if POT3D not in PATH).',
     dest='pot3d',
     type=str,
@@ -61,7 +60,7 @@ def run(args):
   # POT3D input files reside.  
   # Here, assume this script is in the "bin" folder of SWiG.
 
-  rsrcdir = sys.path[0]+'../rsrc/'
+  rsrcdir = sys.path[0]+'/../rsrc/'
   
   # Get filenames of template input files.
   pfss_file = rsrcdir+'pot3d_pfss.dat'
@@ -74,12 +73,18 @@ def run(args):
   print('CS   input template used : '+cs_file)
   print('Input Magnetic Map used  : '+br_input_file)
 
-  pot3d=args.pot3d if args.pot3d else os.popen('which pot3d').read().replace('\n','')
+  if args.pot3d is not None:
+      pot3d=args.pot3d
+  else:
+      pot3d=sys.path[0]+'/../pot3d/bin/pot3d'
+
+  #pot3d=args.pot3d if args.pot3d else os.popen('which pot3d').read().replace('\n','')
 
   # Some basic error checking:
-  if pot3d == "":
-    print("ERROR:  POT3D is not in the path.")
-    return
+#  if pot3d == "":
+#    CHECK FOR POT3D EXISTING
+#    print("ERROR:  POT3D is not in the path.")
+#    return
   if float(args.rss) <= 1.0:
     print("ERROR: rss must be greather than 1.")
     return
@@ -91,7 +96,17 @@ def run(args):
   print("=> Making PFSS directory ")
   os.makedirs("pfss", exist_ok=True)
   os.system('cp '+pfss_file+' pfss/pot3d.dat')
-  os.system('cp '+br_input_file+' pfss/')
+  
+  xvec,yvec,data = ps.rdhdf_2d(br_input_file)
+  if (np.max(xvec) > 3.5):
+    tvec = yvec
+    pvec = xvec
+    data = np.transpose(data)
+  else:
+    tvec = xvec
+    pvec = yvec
+  ps.wrhdf_2d('pfss/br_input_tp.h5',tvec,pvec,data)
+    
   print("=> Entering pfss directory ")
   os.chdir("pfss")
   sed('rss',str(args.rss),'pot3d.dat')
@@ -99,7 +114,7 @@ def run(args):
     sed('ifprec','1','pot3d.dat')
 
   # Launch the PFSS run with POT3D.
-  print("=> Running pot3d for PFSS")
+  print("=> Running POT3D for PFSS")
   os.system('mpiexec -np '+str(args.np)+' '+pot3d +' 1>pot3d.log 2>pot3d.err')
   # [ADD ERROR CHECK HERE]
   print("=> Run complete!")
@@ -166,6 +181,6 @@ if __name__ == '__main__':
 # ### CHANGELOG
 #  
 # ### Version 1.0.0, 04/18/2024, modified by RC:
-#       - Initial versioned veersion.
+#       - Initial versioned version.
 #
 ########################################################################

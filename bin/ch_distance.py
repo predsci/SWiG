@@ -21,16 +21,16 @@ def argParsing():
     required=False)
 
   parser.add_argument('-cfval',
-    help='Use -cfval to specify the value in the coronal hole map that indicates a closed-field region (default=1).',
+    help='Use -cfval to specify the value in the coronal hole map that indicates a closed-field region (default=0).',
     dest='cfval',
     type=float,
-    default=1)
+    default=0)
 
   parser.add_argument('-eps',
     help='Use -eps to specify the tolerance around -cfval (default=1e-5).',
     dest='eps',
     type=float,
-    default=1e-5)
+    default=1.0e-5)
 
   parser.add_argument('-t',
     help='Use -t to specify a map for theta, specify this as 2D HDF files (-t requires -p set as well).',
@@ -74,10 +74,10 @@ def ch_distance(args):
   if (np.max(t1) > 3.5):
     t_ch = t2
     p_ch = t1
+    ch_f = np.transpose(ch_f)
   else:
     t_ch = t1
     p_ch = t2
-    ch_f = np.transpose(ch_f)
 
   nt_ch = len(t_ch)
   np_ch = len(p_ch)
@@ -112,12 +112,12 @@ def ch_distance(args):
     if (np.max(t1_t) > 3.5):
       t_tp = t2_t
       p_tp = t1_t
+      data_t = np.transpose(data_t)      
     else:
       t_tp = t1_t
       p_tp = t2_t
-      data_t = np.transpose(data_t)
 
-    if not (np.max(t1_p) > 3.5):
+    if (np.max(t1_p) > 3.5):
       data_p = np.transpose(data_p)
 
     nt_tp = len(t_tp)
@@ -134,48 +134,51 @@ def ch_distance(args):
     t_tp=t_ch
     p_tp=p_ch
 
-    t =  np.empty((nt_tp,np_tp))
-    p =  np.empty((nt_tp,np_tp))
+    t =  np.empty((np_tp,nt_tp))
+    p =  np.empty((np_tp,nt_tp))
  
     for i in range(nt_tp):
       for j in range (np_tp):
-        t[i][j]=t_ch[i]
-        p[i][j]=p_ch[j]
+        t[i][j]=t_ch[j]
+        p[i][j]=p_ch[i]
 
-  d_f = np.empty((nt_tp,np_tp))
+
+  data_t = np.transpose(data_t)
+
+  d_f = np.empty((np_tp,nt_tp))
 
   if args.verbose:
     print('### Computing the coronal hole distance ...')
 
-  mask = np.empty((nt_ch,np_ch))
-
-  for i in range(nt_ch):
-    for j in range(np_ch):
-      if (in_coronal_hole(ch_f[i][j],args.cfval,args.eps)):
+  mask = np.empty((np_ch,nt_ch)) 
+  
+  for j in range(np_ch):
+    for i in range(nt_ch):
+      if (in_coronal_hole(ch_f[j][i],args.cfval,args.eps)):
         boundary_point = False
-        for jj in range(max(0,j-1),min(np_tp-1,j+1)):
-          for ii in range(max(0,i-1),min(nt_tp-1,i+1)):
-            if not (in_coronal_hole(ch_f[ii][jj],args.cfval,args.eps)):
+        for jj in range(max(0,j-1),min(np_tp-1,j+1)+1): 
+          for ii in range(max(0,i-1),min(nt_tp-1,i+1)+1):
+            if not (in_coronal_hole(ch_f[jj][ii],args.cfval,args.eps)):
               boundary_point = True
       else:
         boundary_point = False
-        for jj in range(max(0,j-1),min(np_tp-1,j+1)):
-          for ii in range(max(0,i-1),min(nt_tp-1,i+1)):
-            if (in_coronal_hole(ch_f[ii][jj],args.cfval,args.eps)):
+        for jj in range(max(0,j-1),min(np_tp-1,j+1)+1):
+          for ii in range(max(0,i-1),min(nt_tp-1,i+1)+1):
+            if (in_coronal_hole(ch_f[jj][ii],args.cfval,args.eps)):
               boundary_point = True
       if boundary_point:
-        mask[i][j]=1
+        mask[j][i]=1
       else:
-        mask[i][j]=0
+        mask[j][i]=0
 
   n_ch_boundary_points = 0
-  for i in range(nt_ch):
-    for j in range(np_ch):
-      if (mask[i][j] != 0):
+  for j in range(np_ch):
+    for i in range(nt_ch):  
+      if (mask[j][i] != 0):
         n_ch_boundary_points=n_ch_boundary_points+1
 
   if (args.verbose):
-    pct=100*(n_ch_boundary_points)/(nt_ch*np_ch)
+    pct=100.0*float(n_ch_boundary_points)/float(nt_ch*np_ch)
     print('### Percentage of points near the coronal hole boundary = '+str(pct)+' %')
 
   ch_list = np.empty((n_ch_boundary_points))
@@ -184,33 +187,35 @@ def ch_distance(args):
   z_list = np.empty((n_ch_boundary_points))
 
   k=0
-  for i in range (nt_ch):
-    for j in range (np_ch):
-      if (mask[i][j] != 0):
-        ch_list[k]=ch_f[i][j]
+  for j in range(np_ch):
+    for i in range(nt_ch):
+      if (mask[j][i] != 0):
+        ch_list[k]=ch_f[j][i]
         x_list[k],y_list[k],z_list[k] = s2c(1,t_ch[i],p_ch[j])
         k=k+1
 
   if (args.show_progress):
     print('')
 
-  for i in range(nt_tp):
-    if (args.show_progress):
-      print('Calculating row '+ str(i+1) +' of '+ str(nt_tp) +' rows')
+  for j in range(np_tp):
+  
+#    if (args.show_progress):
+    print('Calculating '+ str(j+1) +' of '+ str(np_tp))
+    
+    for i in range(nt_tp):
 
-    for j in range(np_tp):
-      x0,y0,z0 = s2c(1,t[i][j],p[i][j])
+      x0,y0,z0 = s2c(1,t[j][i],p[j][i])
 
-      i_ch,i_ch_p1,at = interp(nt_ch,t_ch,t[i][j])
-      j_ch,j_ch_p1,ap = interp(np_ch,p_ch,p[i][j])
+      i_ch,i_ch_p1,at = interp(nt_ch,t_ch,t[j][i])
+      j_ch,j_ch_p1,ap = interp(np_ch,p_ch,p[j][i])
       if (at > 0.5):
         i_ch=i_ch_p1
       if (ap > 0.5):
         j_ch=j_ch_p1  
-      ch_value=ch_f[i_ch][j_ch]
+      ch_value=ch_f[j_ch][i_ch]
 
       if not (in_coronal_hole(ch_value,args.cfval,args.eps)):
-        xdotx0_max=-9e17
+        xdotx0_max=-1.0e300
         for k in range(n_ch_boundary_points):
           if (in_coronal_hole(ch_list[k],args.cfval,args.eps)):
             xdotx0 = x0*x_list[k]+y0*y_list[k]+z0*z_list[k]
@@ -219,11 +224,11 @@ def ch_distance(args):
         xdotx0_max=min(xdotx0_max,1)
 
         if (args.force_ch):
-          d_f[i][j]=0
+          d_f[j][i]=0
         else:
-          d_f[i][j]=-np.arccos(xdotx0_max)
+          d_f[j][i]=-np.arccos(xdotx0_max)
       else:
-        xdotx0_max=-9e17
+        xdotx0_max=-1.0e300
         for k in range(n_ch_boundary_points):
           if not (in_coronal_hole(ch_list[k],args.cfval,args.eps)):
             xdotx0=x0*x_list[k]+y0*y_list[k]+z0*z_list[k]
@@ -231,7 +236,7 @@ def ch_distance(args):
         xdotx0_max=max(xdotx0_max,-1)
         xdotx0_max=min(xdotx0_max,1)
 
-        d_f[i][j]=np.arccos(xdotx0_max)
+        d_f[j][i]=np.arccos(xdotx0_max)
 
   ps.wrhdf_2d(args.dfile, t_tp, p_tp, d_f)
 
@@ -239,7 +244,7 @@ def ch_distance(args):
     print('Wrote the coronal hole distance to file: '+args.dfile)
 
 def in_coronal_hole(value,cfval,eps):
-  if (abs(value-cfval) < eps):
+  if (abs(value-cfval) <= eps):
     return False
   else:
     return True
