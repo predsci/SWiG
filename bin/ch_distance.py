@@ -137,13 +137,10 @@ def ch_distance(args):
     t =  np.empty((np_tp,nt_tp))
     p =  np.empty((np_tp,nt_tp))
  
-    for i in range(nt_tp):
-      for j in range (np_tp):
-        t[i][j]=t_ch[j]
-        p[i][j]=p_ch[i]
-
-
-  data_t = np.transpose(data_t)
+    for j in range(np_tp):
+      for i in range (nt_tp):
+        t[j][i]=t_ch[i]
+        p[j][i]=p_ch[j]
 
   d_f = np.empty((np_tp,nt_tp))
 
@@ -250,20 +247,17 @@ def in_coronal_hole(value,cfval,eps):
     return True
 
 def interp(n,x,xv):
-  i = np.searchsorted(x[0:n],xv)
-
-  if isinstance(i, np.ndarray):
-  	i=i[0]
+  i = np.searchsorted(x,xv, side='right')-1
 
   if (n == 1): 
     ip1 = 0
     alpha = 0
   else:
-    ip1 = i
-    if (x[i-1] == x[i]):
+    ip1 = i+1
+    if (x[i] == x[ip1]):
       alpha = 0
     else:
-      alpha=(xv-x[i-1])/(x[i]-x[i-1])
+      alpha=(xv-x[i])/(x[ip1]-x[i])
   return i,ip1,alpha
 
 def s2c(r,t,p):
