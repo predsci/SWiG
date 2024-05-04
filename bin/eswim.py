@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
 import argparse
+#
 import psih5 as ps
 
 # E-SWiM:  Empirical Solar Wind Models
@@ -12,6 +13,26 @@ import psih5 as ps
 #
 # Version 1.0.1
 #
+########################################################################
+#        Predictive Science Inc.
+#        www.predsci.com
+#        San Diego, California, USA 92121
+########################################################################
+# Copyright 2024 Predictive Science Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+########################################################################
 
 def argParsing():
 
@@ -115,7 +136,7 @@ def main():
 
     ## Read data from input files
     xvec, yvec, data_dchb   = ps.rdhdf_2d(args.dchb)
-    _, _, data_expfac = ps.rdhdf_2d(args.expfac)
+    _,       _, data_expfac = ps.rdhdf_2d(args.expfac)
 
     NX = xvec.size
     NY = yvec.size
@@ -164,9 +185,9 @@ def main():
         temp[i][j] = args.tfast * args.rhofast / rho[i][j]  
 
     ## Write data to output files:
-    ps.wrhdf_2d('vr.h5', xvec, yvec, v)
-    ps.wrhdf_2d('rho.h5', xvec, yvec, rho)
-    ps.wrhdf_2d('t.h5', xvec, yvec, temp)
+    ps.wrhdf_2d('vr_r1.h5',  xvec, yvec, v)
+    ps.wrhdf_2d('rho_r1.h5', xvec, yvec, rho)
+    ps.wrhdf_2d('t_r1.h5',   xvec, yvec, temp)
 
 if __name__ == '__main__':
     main()

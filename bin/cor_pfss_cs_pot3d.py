@@ -3,12 +3,32 @@ import os
 import sys
 import numpy as np
 import argparse
+import subprocess
 #
 import psih5 as ps
 
-#######################
-#  COR_PFSS_CS_POT3D  #
-#######################
+########################################################################
+#  COR_PFSS_CS_POT3D 
+########################################################################
+#        Predictive Science Inc.
+#        www.predsci.com
+#        San Diego, California, USA 92121
+########################################################################
+# Copyright 2024 Predictive Science Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+########################################################################
 
 def argParsing():
   parser = argparse.ArgumentParser(description='Generate PFSS and CS solutions given an input magnetic full-Sun map.')
@@ -44,12 +64,6 @@ def argParsing():
     type=float,
     default=21.5,
     required=False)
-    
-  parser.add_argument('-pot3d_exe',
-    help='Full path to POT3D executable (only needed if POT3D not in PATH).',
-    dest='pot3d',
-    type=str,
-    required=False)
 
 
   return parser.parse_args()
@@ -64,7 +78,7 @@ def run(args):
   
   # Get filenames of template input files.
   pfss_file = rsrcdir+'pot3d_pfss.dat'
-  cs_file = rsrcdir+'pot3d_cs.dat'
+  cs_file   = rsrcdir+'pot3d_cs.dat'
 
   # Get filename of input map.
   br_input_file=args.br_input_file
@@ -73,18 +87,8 @@ def run(args):
   print('CS   input template used : '+cs_file)
   print('Input Magnetic Map used  : '+br_input_file)
 
-  if args.pot3d is not None:
-      pot3d=args.pot3d
-  else:
-      pot3d=sys.path[0]+'/../pot3d/bin/pot3d'
+  pot3d=sys.path[0]+'/../pot3d/bin/pot3d'
 
-  #pot3d=args.pot3d if args.pot3d else os.popen('which pot3d').read().replace('\n','')
-
-  # Some basic error checking:
-#  if pot3d == "":
-#    CHECK FOR POT3D EXISTING
-#    print("ERROR:  POT3D is not in the path.")
-#    return
   if float(args.rss) <= 1.0:
     print("ERROR: rss must be greather than 1.")
     return
@@ -109,15 +113,15 @@ def run(args):
     
   print("=> Entering pfss directory ")
   os.chdir("pfss")
-  sed('rss',str(args.rss),'pot3d.dat')
+  sed('r1',str(args.rss),'pot3d.dat')
   if (args.gpu):
     sed('ifprec','1','pot3d.dat')
 
   # Launch the PFSS run with POT3D.
   print("=> Running POT3D for PFSS")
-  os.system('mpiexec -np '+str(args.np)+' '+pot3d +' 1>pot3d.log 2>pot3d.err')
-  # [ADD ERROR CHECK HERE]
-  print("=> Run complete!")
+  Command='mpiexec -np '+str(args.np)+' '+pot3d +' 1>pot3d.log 2>pot3d.err'
+  subprocess.run(["bash","-c",Command])
+  print("=>    Run complete!")
   
   # Create input for CS.
   # Here, we assume no overlap between PFSS and CS so we just take the 
@@ -140,9 +144,9 @@ def run(args):
 
   # CS POT3D
   print("=> Running POT3D for CS")
-  os.system('mpiexec -np '+str(args.np)+' '+pot3d +' 1>pot3d.log 2>pot3d.err')
-  # [ADD ERROR CHECK HERE]
-  print("=> Run complete!")
+  Command='mpiexec -np '+str(args.np)+' '+pot3d +' 1>pot3d.log 2>pot3d.err'
+  subprocess.run(["bash","-c",Command])
+  print("=>    Run complete!")
   
   # Extract (unsigned) outer slice of CS Br for later use.
   rvec_cs, tvec_cs, pvec_cs, data_cs = ps.rdhdf_3d('br_cs.h5')

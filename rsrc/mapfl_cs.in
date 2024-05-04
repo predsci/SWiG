@@ -1,79 +1,53 @@
 &datum
-!File names for B field:
+!
+! ****** File names for input B field:
+!
   bfile%r='br_cs.h5'
   bfile%t='bt_cs.h5'
   bfile%p='bp_cs.h5'
-!Use cubic interpolation for B [.true.|.false.]:
+!
+! ****** Use cubic interpolation for B [.true.|.false.]:
+!
   cubic=.true.
-!Compute a coronal hole map [.true.|.false.]:
-  compute_ch_map=.false.
-!Radius at which to compute the coronal hole map:
-  ch_map_r=1.
-!File name for the coronal hole map output file:
-  ch_map_output_file=''
-!Field line tracing step size multiplier [DSMULT; multiplies all step sizes]:
-  dsmult=1.
-!Use a variable step size for the field line integration [.true.|.false.]:
-  ds%variable=.true.
-!Step size as a fraction of radius of curvature [for variable step size]:
-  ds%over_rc=0.0025
-!Automatically set the min and max step size [.true.|.false.]:
-  set_ds_automatically=.true.
-!Minimum field line tracing step size [not used for auto ds set]:
-  ds%min=.001
-!Maximum field line tracing step size [not used for auto ds set]:
-  ds%max=.01
-!Limit the field line tracing step size by the local B mesh [.true.|.false.]:
-  ds%limit_by_local_mesh=.true.
-!Fraction of local mesh size to limit by:
-  ds%local_mesh_factor=1.
-!Maximum arc length for a field line integration [LMAX]:
-  ds%lmax=100.
-!Trace forward from R0 to R1 [.true.|.false.]:
-  trace_fwd=.false.
-!File name for forward mapping radius file:
-  rffile=' '
-!File name for forward mapping theta file:
-  tffile=' '
-!File name for forward mapping phi file:
-  pffile=' '
-!File name for forward mapping expansion factor file:
-  effile=''
-!File name for forward mapping SLOG(Q) factor file:
-  slogqffile=''
-!Trace backward from R1 to R0 [.true.|.false.]:
+!
+! ****** Trace backward from R1 to R0 [.true.|.false.]:
+!
   trace_bwd=.true.
-!File name for backward mapping radius file:
-  rbfile=''
-!File name for backward mapping theta file:
+!
+! ****** File name for backward mapping theta file:
+!
   tbfile='r1_rss_t.h5'
-!File name for backward mapping phi file:
+!
+! ****** File name for backward mapping phi file:
+!
   pbfile='r1_rss_p.h5'
-!File name for backward mapping expansion factor file:
-  ebfile=''
-!Flag to use different r mesh than that in the B files [.true.|.false.]:
-  new_r_mesh=.false.
-!Flag to use different t mesh than that in the B files [.true.|.false.]:
+!
+! ****** Flag to use different t mesh than that in the B files [.true.|.false.]:
+!
   new_t_mesh=.true.
-!Name of a 1D HDF file containing the t mesh [' ' => use the uniform mesh below]:
+!
+! ****** Name of a 1D HDF file containing the t mesh [' ' => use a uniform mesh]:
+!
   mesh_file_t= ' '
-!Number of points in the uniform t mesh:
+!
+! ****** Number of points in the uniform t mesh:
+!
   ntss=181
-!Uniform t mesh limits [T0,T1; use T0=T1=0. for a full domain]:
-  t0=0.
-  t1=0.
-!Flag to use different p mesh than that in the B files [.true.|.false.]:
+!
+! ****** Flag to use different p mesh than that in the B files [.true.|.false.]:
+!
   new_p_mesh=.true.
-!Name of a 1D HDF file containing the p mesh [' ' => use the uniform mesh below]:
+!
+! ****** Name of a 1D HDF file containing the p mesh [' ' => use a uniform mesh]:
+!
   mesh_file_p=' '
-!Number of points in the uniform p mesh:
+!
+! ****** Number of points in the uniform p mesh:
+!
   npss=361
-!Uniform p mesh limits [P0,P1; use P0=P1=0. for a full domain]:
-  p0=0.
-  p1=0.
-!Flag to write slice field line traces to HDF files [.true.|.false.]:
-  write_traces_to_hdf=.false.
+!
+! ****** Write out details of calculation.
+!
   verbose=1
 /
-! These represent the default values of parameters in MAPFL.
-! This file should be updated to reflect any changes to MAPFL in the future.
+! Template input file to trace CS solution.

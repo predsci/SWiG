@@ -39,20 +39,20 @@
 !
 ! Output options. 
 !
-  brfile='br_pfss.h5'       
-  btfile='bt_pfss.h5'      
-  bpfile='bp_pfss.h5'       
-  br_photo_file='br_r0_pfss.h5'         
+  brfile='br_pfss.h5'
+  btfile='bt_pfss.h5'
+  bpfile='bp_pfss.h5'
+  br_photo_file='br_r0_pfss.h5'
   br_photo_original_file=''
-  phifile=''                
-  hdf32=.false.            
+  phifile=''
+  hdf32=.false.
 !
 ! Solver options.
 !
-  ifprec=2            
-  epscg=1.e-9         
+  ifprec=2
+  epscg=1.e-9
   ncghist=100
-  ncgmax=10000000    
+  ncgmax=10000000
 !
 ! Debugging flag.
 !

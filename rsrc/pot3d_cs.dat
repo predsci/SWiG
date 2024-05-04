@@ -39,20 +39,20 @@
 !
 ! Output options. 
 !
-  brfile='br_cs.h5'       
-  btfile='bt_cs.h5'      
-  bpfile='bp_cs.h5'     
-  br_photo_file='br_rss_cs.h5'    
-  br_photo_original_file='br_rss_pm_cs.h5' 
-  phifile=''                
-  hdf32=.false.             
+  brfile='br_cs.h5'
+  btfile='bt_cs.h5'
+  bpfile='bp_cs.h5'
+  br_photo_file='br_rss_cs.h5'
+  br_photo_original_file='br_rss_pm_cs.h5'
+  phifile=''
+  hdf32=.false.
 !
 ! Solver options.
 !
-  ifprec=2             
-  epscg=1.e-9          
+  ifprec=2
+  epscg=1.e-9
   ncghist=100
-  ncgmax=10000000  
+  ncgmax=10000000
 !
 ! Debugging flag.
 !
