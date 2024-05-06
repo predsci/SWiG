@@ -237,8 +237,7 @@ def ch_distance(args):
     xdotx0_max_in=np.maximum(xdotx0_max_in,one_n)
     xdotx0_max_in=np.minimum(xdotx0_max_in,one_p)
 
-
-    ch_value=interp(np.transpose(np.array((p[j][:],t[j][:]))))
+    ch_value = interp(np.transpose(np.array((p[j][:],t[j][:]))))
 
     not_coronal_hole_list = abs(ch_value-args.cfval) <= args.eps
 
@@ -263,7 +262,7 @@ def in_coronal_hole(value,cfval,eps):
   else:
     return True
 
-def interp(n,x,xv):
+def interp_old(n,x,xv):
   i = np.searchsorted(x,xv, side='right')-1
 
   if (n == 1): 

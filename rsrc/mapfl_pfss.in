@@ -20,7 +20,7 @@
 !
 ! ****** File name for the coronal hole map output file:
 !
-  ch_map_output_file='ofm.h5'
+  ch_map_output_file='ofm_r0.h5'
 !
 ! ****** Trace forward from R0 to R1 [.true.|.false.]:
 !

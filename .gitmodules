@@ -1,8 +1,8 @@
 [submodule "mapfl"]
 	path = mapfl
 	url = https://github.com/predsci/mapfl
-        ignore = all
+	ignore = untracked
 [submodule "pot3d"]
 	path = pot3d
 	url = https://github.com/predsci/pot3d
-        ignore = all
+	ignore = untracked
