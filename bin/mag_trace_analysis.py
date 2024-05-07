@@ -62,7 +62,7 @@ def run(args):
   mapfl=bindir+'/../mapfl/bin/mapfl'
 
   # Change directory to the run directory.
-  os.chdir(str(args.rundir))
+  os.chdir(args.rundir)
 
   # 1) Trace PFSS backward from rss to r0:
   #  - theta coords            -> rss_r0_t.h5
@@ -100,7 +100,7 @@ def run(args):
   t_expfac_rss_r0, p_expfac_rss_r0, expfac_rss_r0 = ps.rdhdf_2d('pfss/expfac_rss_r0.h5')
 
   # Get expansion factor at r1 through interpolation:
-  expfac_r1_r0 = slice_tp_tp(t_expfac_rss_r0, p_expfac_rss_r0, expfac_rss_r0, r1_rss_t, r1_rss_p)
+  expfac_r1_r0 = slice_tp(t_expfac_rss_r0, p_expfac_rss_r0, expfac_rss_r0, r1_rss_t, r1_rss_p)
   ps.wrhdf_2d('expfac_rss_at_r1.h5', p_r1_rss, t_r1_rss, np.transpose(expfac_r1_r0))
 
   # Get DCHB at rss:
@@ -134,7 +134,7 @@ def slice_tp(t_f,p_f,f,t,p):
   #
   p_f_extended, f_extended = extend_periodic_tp(p_f,f)
 
-  interp = RegularGridInterpolator((p_f, t_f), f, bounds_error=False, fill_value=0)
+  interp = RegularGridInterpolator((p_f_extended, t_f), f_extended, bounds_error=False, fill_value=0)
   coords=np.vstack((p, t)).reshape(-1,p.shape[1]*p.shape[0])
   values=(interp((coords.T))).reshape(p.shape)
   return values
@@ -144,16 +144,16 @@ def extend_periodic_tp(xvec,data):
   tol=1e-6
   if (np.abs(xvec[-1]-xvec[0]-2*np.pi)<=tol):
     # Assume 1-point overlap...
-    data = np.delete(data, 0, 1)
+    data = np.delete(data, 0, 0)
     xvec = np.delete(xvec, 0, 0)
   elif ((xvec[-1]-xvec[0])>2*np.pi+tol and \
         (xvec[-2]-xvec[1])<2*np.pi-tol):
     # Assume 2-point overlap...
-    data = np.delete(data, 0, 1)
+    data = np.delete(data, 0, 0)
     xvec = np.delete(xvec, 0, 0)
-    data = np.delete(data, len(xvec)-1, 1)
+    data = np.delete(data, len(xvec)-1, 0)
     xvec = np.delete(xvec, len(xvec)-1, 0)
-  data = np.append(data,np.append(data,data,1),1)
+  data = np.append(data,np.append(data,data,0),0)
   xvec = np.append(xvec-2*np.pi,np.append(xvec,xvec+2*np.pi))
   return xvec,data
 

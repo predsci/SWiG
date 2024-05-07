@@ -76,11 +76,11 @@ def argParsing():
     default=21.5,
     required=False)
 
-  parser.add_argument('-plot',
-    help='Plot results',
+  parser.add_argument('-noplot',
+    help='Do not plot results',
     dest='plot_results',
-    action='store_true',
-    default=False,
+    action='store_false',
+    default=True,
     required=False)
 
   return parser.parse_args()
@@ -103,34 +103,34 @@ def run(args):
   subprocess.run(["bash","-c",Command])
 
   # Analyze and compute required quantities from model.
-  Command=swigdir+'/bin/mag_trace_analysis.py '+args.rundir
+  Command=swigdir+'/bin/mag_trace_analysis.py .'
   print('=> Running command:  '+Command)
   subprocess.run(["bash","-c",Command])
 
   # Generate solar wind model.
-  Command=swigdir+'/bin/eswim.py -dchb '+args.rundir+'/dchb_at_r1.h5 '+\
-          '-expfac '+args.rundir+'/expfac_rss_at_r1.h5 -model '+args.sw_model
+  Command=swigdir+'/bin/eswim.py -dchb dchb_at_r1.h5 '+\
+          '-expfac expfac_rss_at_r1.h5 -model '+args.sw_model
   print('=> Running command:  '+Command)
   subprocess.run(["bash","-c",Command])
 
   # Collect results and plot everything if selected.
-  result_dir = args.rundir+'/results'
+  result_dir = 'results'
   os.makedirs(result_dir, exist_ok=True)
-  os.command('mv *_r1.h5 '+result_dir);
-  os.command('cp pfss/ofm_r0.h5 '+result_dir)
-  os.command('cp pfss/slogq_r0.h5 '+result_dir)
-  os.command('cp pfss/br_r0_pfss.h5 '+result_dir+'/br_r0.h5')
+  os.system('mv *_r1.h5 '+result_dir);
+  os.system('cp pfss/ofm_r0.h5 '+result_dir)
+  os.system('cp pfss/slogq_r0.h5 '+result_dir)
+  os.system('cp pfss/br_r0_pfss.h5 '+result_dir+'/br_r0.h5')
   
   os.chdir(result_dir)
   
-  if args.plot:
-    os.command(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label Gauss       -cmin -20 -cmax 20 -ll -finegrid     br_r0.h5 -o br_r0.png')
-    os.command(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label ''slog(Q)'' -cmin -7  -cmax 7  -ll -finegrid  slogq_r0.h5 -cmap RdBu -o slogq_r0.png')
-    os.command(swigdir+'/pot3d/scripts/psi_plot2d -tp                         -cmin -1  -cmax 1  -ll -finegrid    ofm_r0.h5 -o ofm_r0.png')
-    os.command(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label K      -cmin 200000 -cmax 2000000 -ll -finegrid  t_r1.h5 -cmap hot -o t_r1.png')
-    os.command(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label g/cm^3 -cmin 100 -cmax 800 -ll -finegrid rho_r1.h5 -cmap hsv -o rho_r1.png'))
-    os.command(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label km/s   -cmin 200 -cmax 700 -ll -finegrid vr_r1.h5 -cmap jet -o vr_r1.png'))
-    os.command(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label Gauss  -cmin -0.002 -cmax 0.002 -ll -finegrid br_r1.h5 -o br_r1.png')
+  if args.plot_results:
+    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label Gauss       -cmin -20 -cmax 20 -ll -finegrid     br_r0.h5 -o br_r0.png')
+    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label "slog(Q)" -cmin -7  -cmax 7  -ll -finegrid  slogq_r0.h5 -cmap RdBu -o slogq_r0.png')
+    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp                         -cmin -1  -cmax 1  -ll -finegrid    ofm_r0.h5 -o ofm_r0.png')
+    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label K           -cmin 200000 -cmax 2000000 -ll -finegrid  t_r1.h5 -cmap hot -o t_r1.png')
+    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label g/cm^3      -cmin 100 -cmax 800 -ll -finegrid rho_r1.h5 -cmap hsv -o rho_r1.png')
+    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label km/s        -cmin 200 -cmax 700 -ll -finegrid vr_r1.h5 -cmap jet -o vr_r1.png')
+    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label Gauss       -cmin -0.002 -cmax 0.002 -ll -finegrid br_r1.h5 -o br_r1.png')
  
 def main():
   args = argParsing()
