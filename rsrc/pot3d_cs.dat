@@ -3,8 +3,8 @@
 ! Grid size (r,theta,phi).
 !
   nr=101
-  nt=181
-  np=361
+  nt=182
+  np=362
  /
  &inputvars
 !
@@ -42,7 +42,9 @@
   brfile='br_cs.h5'
   btfile='bt_cs.h5'
   bpfile='bp_cs.h5'
+  ! Br at the photosphere unsigned
   br_photo_file='br_rss_cs.h5'
+  ! Br at the photosphere signed (but on CS mesh)
   br_photo_original_file='br_rss_pm_cs.h5'
   phifile=''
   hdf32=.false.

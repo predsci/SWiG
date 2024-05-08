@@ -2,7 +2,7 @@
 import numpy as np
 import argparse
 #
-import psih5 as ps
+import psi_io as ps
 
 # E-SWiM:  Empirical Solar Wind Models
 #

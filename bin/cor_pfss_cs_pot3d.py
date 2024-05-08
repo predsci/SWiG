@@ -5,7 +5,7 @@ import numpy as np
 import argparse
 import subprocess
 #
-import psih5 as ps
+import psi_io as ps
 
 ########################################################################
 #  COR_PFSS_CS_POT3D 
@@ -161,14 +161,14 @@ def run(args):
   #concate3D_dim2('pfss/bt_pfss.h5','cs/bt_cs.h5','bt_pfsscs.h5',-2)
   #concate3D_dim2('pfss/bp_pfss.h5','cs/bp_cs.h5','bp_pfsscs.h5',-2)
 
-def concate3D_dim2(file1,file2,file3,dl):
-  rvec1, tvec1, pvec1, data1   = ps.rdhdf_3d(file1)
-  rvec2, tvec2, pvec2, data2   = ps.rdhdf_3d(file2)
-  data1 = np.array(data1)
-  data2 = np.array(data2)
-  data = np.concatenate([data1[:,:,0:dl],data2], axis=2)
-  rvec = np.concatenate([rvec1[0:dl],rvec2])
-  ps.wrhdf_3d(file3, rvec, tvec1, pvec1, data)
+#def concate3D_dim2(file1,file2,file3,dl):
+#  rvec1, tvec1, pvec1, data1   = ps.rdhdf_3d(file1)
+#  rvec2, tvec2, pvec2, data2   = ps.rdhdf_3d(file2)
+#  data1 = np.array(data1)
+#  data2 = np.array(data2)
+#  data = np.concatenate([data1[:,:,0:dl],data2], axis=2)
+#  rvec = np.concatenate([rvec1[0:dl],rvec2])
+#  ps.wrhdf_3d(file3, rvec, tvec1, pvec1, data)
 
 def sed(match,value,file):
   os.system('sed -i "s/.*'+match+'=.*/  '+match+'='+value+'/" "'+file+'"')

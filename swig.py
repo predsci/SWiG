@@ -34,7 +34,7 @@ def argParsing():
   parser = argparse.ArgumentParser(description='Generate solar wind quantities using PFSS+CS magnetic fields combined with emperical solar wind models.')
 
   parser.add_argument('input_map',
-    help='Input Br full-Sun magnetogram.',
+    help='FULL PATH to input Br full-Sun magnetogram (h5).',
     type=str)
 
   parser.add_argument('rundir',
@@ -128,7 +128,7 @@ def run(args):
     os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label "slog(Q)" -cmin -7  -cmax 7  -ll -finegrid  slogq_r0.h5 -cmap RdBu -o slogq_r0.png')
     os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp                         -cmin -1  -cmax 1  -ll -finegrid    ofm_r0.h5 -o ofm_r0.png')
     os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label K           -cmin 200000 -cmax 2000000 -ll -finegrid  t_r1.h5 -cmap hot -o t_r1.png')
-    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label g/cm^3      -cmin 100 -cmax 800 -ll -finegrid rho_r1.h5 -cmap hsv -o rho_r1.png')
+    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label g/cm^3      -cmin 100 -cmax 800 -ll -finegrid rho_r1.h5 -cmap gnuplot2_r -o rho_r1.png')
     os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label km/s        -cmin 200 -cmax 700 -ll -finegrid vr_r1.h5 -cmap jet -o vr_r1.png')
     os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label Gauss       -cmin -0.002 -cmax 0.002 -ll -finegrid br_r1.h5 -o br_r1.png')
  

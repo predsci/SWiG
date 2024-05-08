@@ -6,7 +6,7 @@ import numpy as np
 import argparse
 from scipy.interpolate import RegularGridInterpolator
 #
-import psih5 as ps
+import psi_io as ps
 
 ########################################################################
 #  MAG_TRACE_ANALYSIS #

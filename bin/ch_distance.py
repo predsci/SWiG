@@ -3,7 +3,7 @@ import argparse
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 #
-import psih5 as ps
+import psi_io as ps
 
 ########################################################################
 #        Predictive Science Inc.

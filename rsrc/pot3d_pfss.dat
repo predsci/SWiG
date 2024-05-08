@@ -3,8 +3,8 @@
 ! Grid size (r,theta,phi).
 !
   nr=55
-  nt=181
-  np=361
+  nt=182
+  np=362
  /
  &inputvars
 !
