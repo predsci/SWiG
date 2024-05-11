@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import numpy as np
+import sys
 from scipy.interpolate import RegularGridInterpolator
 #
 import psi_io as ps
@@ -106,19 +107,18 @@ def ch_distance(args):
   np_ch = len(p_ch)
 
   if (args.tfile or args.pfile) and not (args.tfile and args.pfile) :
+    print(' ')
     print('### ERROR in ch_distance.py')
     print('### The options -t and -p must both be set together.')
-    exit(1)
+    sys.exit(1)
 
   if (args.tfile):
     if (args.verbose):
-          print("")
           print('=> Reading theta coordinate file: '+args.tfile)
 
     t1_t, t2_t, data_t  = ps.rdhdf_2d(args.tfile)
 
     if (args.verbose):
-          print("")
           print('=> Reading phi coordinate file: '+args.pfile)
 
     t1_p, t2_p, data_p  = ps.rdhdf_2d(args.pfile)
@@ -129,7 +129,7 @@ def ch_distance(args):
       print('### The theta and phi coordinate files do not have the same dimensions:')
       print('Theta file dimensions: '+ str(len(t1_t))+' '+str(len(t2_t)))
       print('Phi file dimensions: '  + str(len(t1_p))+' '+str(len(t2_p)))
-      exit(1)
+      sys.exit(1)
 
     # If the data is in pt format, transpose to tp:
     if (np.max(t1_t) > 3.5):
@@ -166,7 +166,7 @@ def ch_distance(args):
   d_f = np.empty((np_tp,nt_tp))
 
   if args.verbose:
-    print('### Computing the coronal hole distance ...')
+    print('=> Computing the distance to contour boundaries...')
 
   mask = np.empty((np_ch,nt_ch)) 
 
@@ -193,7 +193,7 @@ def ch_distance(args):
 
   if (args.verbose):
     pct=100.0*float(n_ch_boundary_points)/float(nt_ch*np_ch)
-    print('### Percentage of points near the coronal hole boundary = '+str(pct)+' %')
+    print('=> Percentage of points near the contour boundary = '+str(pct)+' %')
 
   ch_list = np.empty((n_ch_boundary_points))
   x_list = np.empty((n_ch_boundary_points))
@@ -207,9 +207,6 @@ def ch_distance(args):
         ch_list[k]=ch_f[j][i]
         x_list[k],y_list[k],z_list[k] = s2c(1,t_ch[i],p_ch[j])
         k=k+1
-
-  if (args.show_progress):
-    print('')
 
   interp = RegularGridInterpolator((p_ch, t_ch), ch_f, method='nearest')
   x,y,z = s2c(1,t,p)
@@ -254,7 +251,7 @@ def ch_distance(args):
   ps.wrhdf_2d(args.dfile, t_tp, p_tp, d_f)
 
   if (args.verbose):
-    print('=> Wrote the coronal hole distance to file: '+args.dfile)
+    print('=> Wrote the contour distance to file: '+args.dfile)
 
 def in_coronal_hole(value,cfval,eps):
   if (abs(value-cfval) <= eps):

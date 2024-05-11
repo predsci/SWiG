@@ -4,6 +4,7 @@ import sys
 import numpy as np
 import argparse
 import subprocess
+from pathlib import Path
 
 ########################################################################
 # SWiG:  Solar Wind Generator
@@ -34,11 +35,13 @@ def argParsing():
   parser = argparse.ArgumentParser(description='Generate solar wind quantities using PFSS+CS magnetic fields combined with emperical solar wind models.')
 
   parser.add_argument('input_map',
-    help='FULL PATH to input Br full-Sun magnetogram (h5).',
+    help='Input Br full-Sun magnetogram (h5).',
     type=str)
 
-  parser.add_argument('rundir',
+  parser.add_argument('-rundir',
     help='Directory where run will go.',
+    dest='rundir',
+    required=False,
     type=str)
 
   parser.add_argument('-np',
@@ -90,40 +93,49 @@ def run(args):
   # Get path of the SWiG directory:
   swigdir = sys.path[0]
 
+  # Get full path of input file:
+  args.input_map = str(Path(args.input_map).resolve())
+
   # Make rundir and go there
+  if args.rundir is None:
+      args.rundir = str(Path(args.input_map).stem)+'_swig_run'
+
   os.makedirs(args.rundir, exist_ok=True)
   os.chdir(args.rundir)
 
   # Run PF model.
+  print('=> Running PFSS+CS model with POT3D:')
   Command=swigdir+'/bin/cor_pfss_cs_pot3d.py '+args.input_map+\
           ' -np '+str(args.np)+' -rss '+str(args.rss)+' -r1 '+str(args.r1)
   if (args.gpu):
     Command=Command+' -gpu'
-  print('=> Running command:  '+Command)
+  print('   Command:  '+Command)
   subprocess.run(["bash","-c",Command])
 
   # Analyze and compute required quantities from model.
+  print('=> Running magnetic tracing analysis:')
   Command=swigdir+'/bin/mag_trace_analysis.py .'
-  print('=> Running command:  '+Command)
+  print('   Command:  '+Command)
   subprocess.run(["bash","-c",Command])
 
   # Generate solar wind model.
+  print('=> Running emperical solar wind model:')
   Command=swigdir+'/bin/eswim.py -dchb dchb_at_r1.h5 '+\
           '-expfac expfac_rss_at_r1.h5 -model '+args.sw_model
-  print('=> Running command:  '+Command)
+  print('   Command:  '+Command)
   subprocess.run(["bash","-c",Command])
 
   # Collect results and plot everything if selected.
+  print('=> Collecting results...')
   result_dir = 'results'
   os.makedirs(result_dir, exist_ok=True)
   os.system('mv *_r1.h5 '+result_dir);
   os.system('cp pfss/ofm_r0.h5 '+result_dir)
   os.system('cp pfss/slogq_r0.h5 '+result_dir)
   os.system('cp pfss/br_r0_pfss.h5 '+result_dir+'/br_r0.h5')
-  
   os.chdir(result_dir)
-  
   if args.plot_results:
+    print('=> Plotting results...')
     os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label Gauss       -cmin -20 -cmax 20 -ll -finegrid     br_r0.h5 -o br_r0.png')
     os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label "slog(Q)" -cmin -7  -cmax 7  -ll -finegrid  slogq_r0.h5 -cmap RdBu -o slogq_r0.png')
     os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp                         -cmin -1  -cmax 1  -ll -finegrid    ofm_r0.h5 -o ofm_r0.png')
@@ -131,6 +143,10 @@ def run(args):
     os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label g/cm^3      -cmin 100 -cmax 800 -ll -finegrid rho_r1.h5 -cmap gnuplot2_r -o rho_r1.png')
     os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label km/s        -cmin 200 -cmax 700 -ll -finegrid vr_r1.h5 -cmap jet -o vr_r1.png')
     os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label Gauss       -cmin -0.002 -cmax 0.002 -ll -finegrid br_r1.h5 -o br_r1.png')
+
+  print('=> SWiG complete!')
+  print('=> Results can be found here:  ')
+  print('   '+str(Path('../'+result_dir).resolve()))
  
 def main():
   args = argParsing()
