@@ -38,6 +38,11 @@ def argParsing():
     help='Input Br full-Sun magnetogram (h5).',
     type=str)
 
+  parser.add_argument('-oidx',
+    help='Index to use for output file names).',
+    required=False,
+    type=int)
+
   parser.add_argument('-rundir',
     help='Directory where run will go.',
     dest='rundir',
@@ -129,20 +134,28 @@ def run(args):
   print('=> Collecting results...')
   result_dir = 'results'
   os.makedirs(result_dir, exist_ok=True)
-  os.system('mv *_r1.h5 '+result_dir);
-  os.system('cp pfss/ofm_r0.h5 '+result_dir)
-  os.system('cp pfss/slogq_r0.h5 '+result_dir)
-  os.system('cp pfss/br_r0_pfss.h5 '+result_dir+'/br_r0.h5')
+  if args.oidx is not None:
+    idxstr='_idx{:06d}'.format(args.oidx)
+  else:
+    idxstr=''
+  os.system('mv br_r1.h5 '          + result_dir + '/br_r1'    + idxstr + '.h5')
+  os.system('mv vr_r1.h5 '          + result_dir + '/vr_r1'    + idxstr + '.h5')
+  os.system('mv t_r1.h5 '           + result_dir + '/t_r1'     + idxstr + '.h5')
+  os.system('mv rho_r1.h5 '         + result_dir + '/rho_r1'   + idxstr + '.h5')
+  os.system('cp pfss/ofm_r0.h5 '    + result_dir + '/ofm_r0'   + idxstr + '.h5')
+  os.system('cp pfss/slogq_r0.h5 '  + result_dir + '/slogq_r0' + idxstr + '.h5')
+  os.system('cp pfss/br_r0_pfss.h5 '+ result_dir + '/br_r0'    + idxstr + '.h5')
+
   os.chdir(result_dir)
   if args.plot_results:
     print('=> Plotting results...')
-    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label Gauss       -cmin -20 -cmax 20 -ll -finegrid     br_r0.h5 -o br_r0.png')
-    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label "slog(Q)" -cmin -7  -cmax 7  -ll -finegrid  slogq_r0.h5 -cmap RdBu -o slogq_r0.png')
-    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp                         -cmin -1  -cmax 1  -ll -finegrid    ofm_r0.h5 -o ofm_r0.png')
-    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label K           -cmin 200000 -cmax 2000000 -ll -finegrid  t_r1.h5 -cmap hot -o t_r1.png')
-    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label g/cm^3      -cmin 100 -cmax 800 -ll -finegrid rho_r1.h5 -cmap gnuplot2_r -o rho_r1.png')
-    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label km/s        -cmin 200 -cmax 700 -ll -finegrid vr_r1.h5 -cmap jet -o vr_r1.png')
-    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label Gauss       -cmin -0.002 -cmax 0.002 -ll -finegrid br_r1.h5 -o br_r1.png')
+    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label Gauss     -cmin -20    -cmax 20      -ll -finegrid    br_r0'+idxstr+'.h5                  -o    br_r0'+idxstr+'.png')
+    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label "slog(Q)" -cmin -7     -cmax 7       -ll -finegrid slogq_r0'+idxstr+'.h5 -cmap RdBu       -o slogq_r0'+idxstr+'.png')
+    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp                       -cmin -1     -cmax 1       -ll -finegrid   ofm_r0'+idxstr+'.h5                  -o   ofm_r0'+idxstr+'.png')
+    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label K         -cmin 200000 -cmax 2000000 -ll -finegrid     t_r1'+idxstr+'.h5 -cmap hot        -o     t_r1'+idxstr+'.png')
+    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label g/cm^3    -cmin 100    -cmax 800     -ll -finegrid   rho_r1'+idxstr+'.h5 -cmap gnuplot2_r -o   rho_r1'+idxstr+'.png')
+    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label km/s      -cmin 200    -cmax 700     -ll -finegrid    vr_r1'+idxstr+'.h5 -cmap jet        -o    vr_r1'+idxstr+'.png')
+    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label Gauss     -cmin -0.002 -cmax 0.002   -ll -finegrid    br_r1'+idxstr+'.h5                  -o    br_r1'+idxstr+'.png')
 
   print('=> SWiG complete!')
   print('=> Results can be found here:  ')
