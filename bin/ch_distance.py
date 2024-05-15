@@ -93,6 +93,9 @@ def ch_distance(args):
     print('=> Reading coronal hole file: '+args.chfile)
 
   t1, t2, ch_f  = ps.rdhdf_2d(args.chfile)
+  ch_f = np.array(ch_f)
+
+  check_error_code((ch_f < -1-args.eps).any(),'Failed : '+args.chfile+' has a value < -1')
 
   # If the data is in pt format, transpose to tp:
   if (np.max(t1) > 3.5):
@@ -118,10 +121,17 @@ def ch_distance(args):
 
     t1_t, t2_t, data_t  = ps.rdhdf_2d(args.tfile)
 
+    data_t = np.array(data_t)
+    check_error_code((data_t < 0-args.eps).any(),'Failed : '+args.tfile+' has a negative value')
+
+
     if (args.verbose):
           print('=> Reading phi coordinate file: '+args.pfile)
 
     t1_p, t2_p, data_p  = ps.rdhdf_2d(args.pfile)
+
+    data_p = np.array(data_p)
+    check_error_code((data_p < 0-args.eps).any(),'Failed : '+args.pfile+' has a negative value')
 
     if len(t1_t) != len(t1_p) or len(t2_t) != len(t2_p):
       print("")
@@ -279,6 +289,13 @@ def s2c(r,t,p):
   y=rst*np.sin(p)
   z=r*np.cos(t)
   return x,y,z
+
+def check_error_code(ierr,message):
+  if ierr > 0:
+    print(' ')
+    print(message)
+    print('Error code of fail : '+str(ierr))
+    sys.exit(1)
 
 def main():
   args = argParsing()

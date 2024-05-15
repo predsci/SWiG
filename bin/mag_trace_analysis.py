@@ -80,10 +80,12 @@ def run(args):
   # Setup the PFSS MAPFL tracing:
   print("=> Running MAPFL on PFSS solution... ")
   os.chdir("pfss")
-  os.system('cp '+pfss_file+' mapfl.in')
+  ierr = os.system('cp '+pfss_file+' mapfl.in')
+  check_error_code(ierr,'Failed on copy of '+pfss_file+' to mapfl.in')
   Command=mapfl +' 1>mapfl.log 2>mapfl.err'
   print('   Command: '+Command)
-  subprocess.run(["bash","-c",Command])
+  ierr = subprocess.run(["bash","-c",Command])
+  check_error_code(ierr.returncode,'Failed : '+Command)
   print("    ...done!")
   os.chdir("..")
 
@@ -94,10 +96,12 @@ def run(args):
   # Setup the CS MAPFL tracing:
   print("=> Running MAPFL on CS solution...")
   os.chdir("cs")
-  os.system('cp '+cs_file+' mapfl.in')
+  ierr = os.system('cp '+cs_file+' mapfl.in')
+  check_error_code(ierr,'Failed on copy of '+cs_file+' to mapfl.in')
   Command=mapfl +' 1>mapfl.log 2>mapfl.err'
   print('   Command: '+Command)
-  subprocess.run(["bash","-c",Command])
+  ierr = subprocess.run(["bash","-c",Command])
+  check_error_code(ierr.returncode,'Failed : '+Command)
   print("    ...done!")
   os.chdir("..")
 
@@ -118,7 +122,8 @@ def run(args):
   print("=> Calculating the distance to open field boundaries (DCHB)... ")
   print("   (automatically projecting DCHB at R0 to RSS)")
   # Get DCHB at rss:
-  os.system(bindir+'/ch_distance.py -t pfss/rss_r0_t.h5 -p pfss/rss_r0_p.h5 -force_ch -chfile pfss/ofm_r0.h5 -dfile pfss/dchb_rss.h5')
+  ierr = os.system(bindir+'/ch_distance.py -t pfss/rss_r0_t.h5 -p pfss/rss_r0_p.h5 -force_ch -chfile pfss/ofm_r0.h5 -dfile pfss/dchb_rss.h5')
+  check_error_code(ierr,'Failed on : '+bindir+'/ch_distance.py -t pfss/rss_r0_t.h5 -p pfss/rss_r0_p.h5 -force_ch -chfile pfss/ofm_r0.h5 -dfile pfss/dchb_rss.h5')
   t_dchb_rss,      p_dchb_rss,      dchb_rss     = ps.rdhdf_2d('pfss/dchb_rss.h5')
 
   print("=> Projecting DCHB at RSS out to R1...")
@@ -171,6 +176,13 @@ def extend_periodic_tp(xvec,data):
   data = np.append(data,np.append(data,data,0),0)
   xvec = np.append(xvec-2*np.pi,np.append(xvec,xvec+2*np.pi))
   return xvec,data
+
+def check_error_code(ierr,message):
+  if ierr > 0:
+    print(' ')
+    print(message)
+    print('Error code of fail : '+str(ierr))
+    sys.exit(1)
 
 def main():
   args = argParsing()

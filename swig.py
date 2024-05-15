@@ -106,6 +106,7 @@ def run(args):
       args.rundir = str(Path(args.input_map).stem)+'_swig_run'
 
   os.makedirs(args.rundir, exist_ok=True)
+
   os.chdir(args.rundir)
 
   # Run PF model.
@@ -115,20 +116,23 @@ def run(args):
   if (args.gpu):
     Command=Command+' -gpu'
   print('   Command:  '+Command)
-  subprocess.run(["bash","-c",Command])
+  ierr = subprocess.run(["bash","-c",Command])
+  check_error_code(ierr.returncode,'Failed : '+Command)
 
   # Analyze and compute required quantities from model.
   print('=> Running magnetic tracing analysis:')
   Command=swigdir+'/bin/mag_trace_analysis.py .'
   print('   Command:  '+Command)
-  subprocess.run(["bash","-c",Command])
+  ierr = subprocess.run(["bash","-c",Command])
+  check_error_code(ierr.returncode,'Failed : '+Command)
 
   # Generate solar wind model.
   print('=> Running emperical solar wind model:')
   Command=swigdir+'/bin/eswim.py -dchb dchb_at_r1.h5 '+\
           '-expfac expfac_rss_at_r1.h5 -model '+args.sw_model
   print('   Command:  '+Command)
-  subprocess.run(["bash","-c",Command])
+  ierr = subprocess.run(["bash","-c",Command])
+  check_error_code(ierr.returncode,'Failed : '+Command)
 
   # Collect results and plot everything if selected.
   print('=> Collecting results...')
@@ -138,29 +142,52 @@ def run(args):
     idxstr='_idx{:06d}'.format(args.oidx)
   else:
     idxstr=''
-  os.system('mv br_r1.h5 '          + result_dir + '/br_r1'    + idxstr + '.h5')
-  os.system('mv vr_r1.h5 '          + result_dir + '/vr_r1'    + idxstr + '.h5')
-  os.system('mv t_r1.h5 '           + result_dir + '/t_r1'     + idxstr + '.h5')
-  os.system('mv rho_r1.h5 '         + result_dir + '/rho_r1'   + idxstr + '.h5')
-  os.system('cp pfss/ofm_r0.h5 '    + result_dir + '/ofm_r0'   + idxstr + '.h5')
-  os.system('cp pfss/slogq_r0.h5 '  + result_dir + '/slogq_r0' + idxstr + '.h5')
-  os.system('cp pfss/br_r0_pfss.h5 '+ result_dir + '/br_r0'    + idxstr + '.h5')
+  ierr = os.system('mv br_r1.h5 '          + result_dir + '/br_r1'    + idxstr + '.h5')
+  check_error_code(ierr,'Failed to move br_r1.h5 to '+ result_dir + '/br_r1'    + idxstr + '.h5')
+  ierr = os.system('mv vr_r1.h5 '          + result_dir + '/vr_r1'    + idxstr + '.h5')
+  check_error_code(ierr,'Failed to move vr_r1.h5 to '+ result_dir + '/vr_r1'    + idxstr + '.h5')
+  ierr = os.system('mv t_r1.h5 '           + result_dir + '/t_r1'     + idxstr + '.h5')
+  check_error_code(ierr,'Failed to move t_r1.h5 to '+ result_dir + '/t_r1'    + idxstr + '.h5')
+  ierr = os.system('mv rho_r1.h5 '         + result_dir + '/rho_r1'   + idxstr + '.h5')
+  check_error_code(ierr,'Failed to move rho_r1.h5 to '+ result_dir + '/rho_r1'    + idxstr + '.h5')
+  ierr = os.system('cp pfss/ofm_r0.h5 '    + result_dir + '/ofm_r0'   + idxstr + '.h5')
+  check_error_code(ierr,'Failed to copy pfss/ofm_r0.h5 to '+ result_dir + '/ofm_r0'   + idxstr + '.h5')
+  ierr = os.system('cp pfss/slogq_r0.h5 '  + result_dir + '/slogq_r0' + idxstr + '.h5')
+  check_error_code(ierr,'Failed to copy pfss/slogq_r0.h5 to '+ result_dir + '/slogq_r0'   + idxstr + '.h5')
+  ierr = os.system('cp pfss/br_r0_pfss.h5 '+ result_dir + '/br_r0'    + idxstr + '.h5')
+  check_error_code(ierr,'Failed to copy pfss/br_r0_pfss.h5 to '+ result_dir + '/br_r0'   + idxstr + '.h5')
 
   os.chdir(result_dir)
   if args.plot_results:
     print('=> Plotting results...')
-    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label Gauss     -cmin -20    -cmax 20      -ll -finegrid    br_r0'+idxstr+'.h5                  -o    br_r0'+idxstr+'.png')
-    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label "slog(Q)" -cmin -7     -cmax 7       -ll -finegrid slogq_r0'+idxstr+'.h5 -cmap RdBu       -o slogq_r0'+idxstr+'.png')
-    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp                       -cmin -1     -cmax 1       -ll -finegrid   ofm_r0'+idxstr+'.h5                  -o   ofm_r0'+idxstr+'.png')
-    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label K         -cmin 200000 -cmax 2000000 -ll -finegrid     t_r1'+idxstr+'.h5 -cmap hot        -o     t_r1'+idxstr+'.png')
-    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label g/cm^3    -cmin 100    -cmax 800     -ll -finegrid   rho_r1'+idxstr+'.h5 -cmap gnuplot2_r -o   rho_r1'+idxstr+'.png')
-    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label km/s      -cmin 200    -cmax 700     -ll -finegrid    vr_r1'+idxstr+'.h5 -cmap jet        -o    vr_r1'+idxstr+'.png')
-    os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label Gauss     -cmin -0.002 -cmax 0.002   -ll -finegrid    br_r1'+idxstr+'.h5                  -o    br_r1'+idxstr+'.png')
+    ierr = os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label Gauss     -cmin -20    -cmax 20      -ll -finegrid    br_r0'+idxstr+'.h5                  -o    br_r0'+idxstr+'.png')
+    check_error_code(ierr,'Failed to plot br_r0'+idxstr+'.h5')
+    ierr = os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label "slog(Q)" -cmin -7     -cmax 7       -ll -finegrid slogq_r0'+idxstr+'.h5 -cmap RdBu       -o slogq_r0'+idxstr+'.png')
+    check_error_code(ierr,'Failed to plot slogq_r0'+idxstr+'.h5')
+    ierr = os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp                       -cmin -1     -cmax 1       -ll -finegrid   ofm_r0'+idxstr+'.h5                  -o   ofm_r0'+idxstr+'.png')
+    check_error_code(ierr,'Failed to plot ofm_r0'+idxstr+'.h5')
+    ierr = os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label K         -cmin 200000 -cmax 2000000 -ll -finegrid     t_r1'+idxstr+'.h5 -cmap hot        -o     t_r1'+idxstr+'.png')
+    check_error_code(ierr,'Failed to plot t_r1'+idxstr+'.h5')
+    ierr = os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label g/cm^3    -cmin 100    -cmax 800     -ll -finegrid   rho_r1'+idxstr+'.h5 -cmap gnuplot2_r -o   rho_r1'+idxstr+'.png')
+    check_error_code(ierr,'Failed to plot rho_r1'+idxstr+'.h5')
+    ierr = os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label km/s      -cmin 200    -cmax 700     -ll -finegrid    vr_r1'+idxstr+'.h5 -cmap jet        -o    vr_r1'+idxstr+'.png')
+    check_error_code(ierr,'Failed to plot vr_r1'+idxstr+'.h5')
+    ierr = os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label Gauss     -cmin -0.002 -cmax 0.002   -ll -finegrid    br_r1'+idxstr+'.h5                  -o    br_r1'+idxstr+'.png')
+    check_error_code(ierr,'Failed to plot br_r1'+idxstr+'.h5')
 
   print('=> SWiG complete!')
   print('=> Results can be found here:  ')
   print('   '+str(Path('../'+result_dir).resolve()))
  
+
+def check_error_code(ierr,message):
+  if ierr > 0:
+    print(' ')
+    print(message)
+    print('Error code of fail : '+str(ierr))
+    sys.exit(1)
+
+
 def main():
   args = argParsing()
   run(args)

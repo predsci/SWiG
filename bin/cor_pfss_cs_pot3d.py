@@ -96,21 +96,16 @@ def run(args):
   pot3d=sys.path[0]+'/../pot3d/bin/pot3d'
 
   # Some error checking:
-  if float(args.rss) <= 1.0:
-    print(" ")
-    print("ERROR: rss must be greather than 1.")
-    sys.exit(1)
-  if float(args.rss) >= float(args.r1):
-    print(" ")
-    print("ERROR: r1 must be greater than rss.")
-    sys.exit(1)
+  check_error_code(float(args.rss) <= 1.0,'ERROR: rss must be greather than 1.')
+  check_error_code(float(args.rss) >= float(args.r1),'ERROR: r1 must be greater than rss.')
 
   # Setup the PFSS run.
   print("=> Making directory to run PFSS: pfss")
   os.makedirs("pfss", exist_ok=True)
 
   print("=> Copying input file template and input map to pfss directory...")
-  os.system('cp '+pfss_file+' pfss/pot3d.dat') 
+  ierr = os.system('cp '+pfss_file+' pfss/pot3d.dat') 
+  check_error_code(ierr,'Failed on copy of '+pfss_file+' to pfss/pot3d.dat')
   # Read in input map and write it in tp for use with POT3D:
   xvec,yvec,data = ps.rdhdf_2d(br_input_file)
   if (np.max(xvec) > 3.5):
@@ -131,7 +126,8 @@ def run(args):
   print("=> Running POT3D for PFSS...")
   Command='mpiexec -np '+str(args.np)+' '+pot3d +' 1>pot3d.log 2>pot3d.err'
   print('   Command: '+Command)
-  subprocess.run(["bash","-c",Command])
+  ierr = subprocess.run(["bash","-c",Command])
+  check_error_code(ierr.returncode,'Failed : '+Command)
   print("    ...done!")
   
   # Create input for CS. Here, we assume no overlap between PFSS 
@@ -144,8 +140,10 @@ def run(args):
   print("=> Making directory to run CS: cs")
   os.makedirs("cs", exist_ok=True)
   print("=> Copying input file template and input map to cs directory...")
-  os.system('cp '+cs_file+' cs/pot3d.dat')
-  os.system('cp pfss/br_rss.h5 cs/')
+  ierr = os.system('cp '+cs_file+' cs/pot3d.dat')
+  check_error_code(ierr,'Failed on copy of '+cs_file+' to cs/pot3d.dat')
+  ierr = os.system('cp pfss/br_rss.h5 cs/')
+  check_error_code(ierr,'Failed on copy of pfss/br_rss.h5 to cs/')
   print("=> Entering cs directory and modifying input file... ")
   os.chdir("cs")
   sed('r0',str(args.rss),'pot3d.dat')
@@ -157,7 +155,8 @@ def run(args):
   print("=> Running POT3D for CS...")
   Command='mpiexec -np '+str(args.np)+' '+pot3d +' 1>pot3d.log 2>pot3d.err'
   print('   Command: '+Command)
-  subprocess.run(["bash","-c",Command])
+  ierr = subprocess.run(["bash","-c",Command])
+  check_error_code(ierr.returncode,'Failed : '+Command)
   print("    ...done!")
   
   # Extract (unsigned) outer slice of CS Br for later use.
@@ -187,7 +186,16 @@ def run(args):
 #  ps.wrhdf_3d(file3, rvec, tvec1, pvec1, data)
 
 def sed(match,value,file):
-  os.system('sed -i "s/.*'+match+'=.*/  '+match+'='+value+'/" "'+file+'"')
+  ierr = os.system('sed -i "s/.*'+match+'=.*/  '+match+'='+value+'/" "'+file+'"')
+  check_error_code(ierr,'Failed on sed of '+match+' in '+file)
+
+
+def check_error_code(ierr,message):
+  if ierr > 0:
+    print(' ')
+    print(message)
+    print('Error code of fail : '+str(ierr))
+    sys.exit(1)
 
 def main():
   args = argParsing()
