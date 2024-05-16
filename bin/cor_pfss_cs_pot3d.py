@@ -117,13 +117,13 @@ def run(args):
     pvec = yvec
 
 #  Command='grep "nt=" pfss/pot3d.dat'
-#  ierr = subprocess.run(["bash","-c",Command],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL, text=True)
+#  ierr = subprocess.run(["bash","-c",Command],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
 #  check_error_code(ierr.returncode,'Failed to get "nt=" from pfss/pot3d.dat')
-#  pot3d_nt=int(ierr.stdout.split('=')[1])
+#  pot3d_nt=int(ierr.stdout.decode("utf-8").split('=')[1])
 #  Command='grep "np=" pfss/pot3d.dat'
-#  ierr = subprocess.run(["bash","-c",Command],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL, text=True)
+#  ierr = subprocess.run(["bash","-c",Command],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
 #  check_error_code(ierr.returncode,'Failed to get "np=" from pfss/pot3d.dat')
-#  pot3d_np=int(ierr.stdout.split('=')[1])
+#  pot3d_np=int(ierr.stdout.decode("utf-8").split('=')[1])
 
 #  if len(tvec)/pot3d_nt > 0.05 and len(pvec)/pot3d_np > 0.05:
 #    print(' ')
