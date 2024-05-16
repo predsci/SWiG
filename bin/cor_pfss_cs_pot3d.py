@@ -128,19 +128,19 @@ def run(args):
   if len(tvec)/pot3d_nt > 0.05 and len(pvec)/pot3d_np > 0.05:
     print(' ')
     print('====> WARNING!!!!! ')
-    print('====> The t and p dimentions in the input map are more than 5\% larger than the resolutions of t and p set in the pot3d.dat template file for PFSS ')
+    print("====> The t and p dimentions in the input map are more than 5% larger than the resolutions of t and p set in the pot3d.dat template file for PFSS ")
     print('====> Please check the processing of the map.')
     print(' ')
   elif len(pvec)/pot3d_np > 0.05:
     print(' ')
     print('====> WARNING!!!!! ')
-    print('====> The p dimenion in the input map is more than 5\% larger than the resolution of p set in the pot3d.dat template file for PFSS ')
+    print("====> The p dimenion in the input map is more than 5% larger than the resolution of p set in the pot3d.dat template file for PFSS ")
     print('====> Please check the processing of the map.')
     print(' ')
   elif len(tvec)/pot3d_nt > 0.05:
     print(' ')
     print('====> WARNING!!!!! ')
-    print('====> The t dimenion in the input map is more than 5\% larger than the resolution of t set in the pot3d.dat template file for PFSS ')
+    print("====> The t dimenion in the input map is more than 5% larger than the resolution of t set in the pot3d.dat template file for PFSS ")
     print('====> Please check the processing of the map.')
 
   ps.wrhdf_2d('pfss/br_input_tp.h5',tvec,pvec,data)
