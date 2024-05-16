@@ -86,6 +86,9 @@ def run(args):
   print('   Command: '+Command)
   ierr = subprocess.run(["bash","-c",Command])
   check_error_code(ierr.returncode,'Failed : '+Command)
+  line_to_check='A field line did not reach'
+  check_file_for_line(line_to_check,'mapfl.log','Failed : A field line did not reach R0 or R1.')
+
   print("    ...done!")
   os.chdir("..")
 
@@ -102,6 +105,9 @@ def run(args):
   print('   Command: '+Command)
   ierr = subprocess.run(["bash","-c",Command])
   check_error_code(ierr.returncode,'Failed : '+Command)
+  line_to_check='A field line did not reach'
+  check_file_for_line(line_to_check,'mapfl.log','Failed : A field line did not reach R0 or R1.')
+
   print("    ...done!")
   os.chdir("..")
 
@@ -156,8 +162,8 @@ def slice_tp(t_f,p_f,f,t,p):
   p_f_extended, f_extended = extend_periodic_tp(p_f,f)
 
   interp = RegularGridInterpolator((p_f_extended, t_f), f_extended, bounds_error=False, fill_value=0)
-  coords=np.vstack((p, t)).reshape(-1,p.shape[1]*p.shape[0])
-  values=(interp((coords.T))).reshape(p.shape)
+  coords=np.column_stack((p.flatten(), t.flatten()))
+  values=(interp((coords))).reshape(p.shape)
   return values
 
 def extend_periodic_tp(xvec,data):
@@ -183,6 +189,12 @@ def check_error_code(ierr,message):
     print(message)
     print('Error code of fail : '+str(ierr))
     sys.exit(1)
+
+def check_file_for_line(line_to_check,file,message):
+  Command='grep "'+line_to_check+'" '+file
+  ierr = subprocess.run(["bash","-c",Command],stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+  ierr = 1 if ierr.returncode == 0 else 0
+  check_error_code(ierr,message)
 
 def main():
   args = argParsing()

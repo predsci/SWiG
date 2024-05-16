@@ -115,6 +115,34 @@ def run(args):
   else:
     tvec = xvec
     pvec = yvec
+
+  Command='grep "nt=" pfss/pot3d.dat'
+  ierr = subprocess.run(["bash","-c",Command],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL, text=True)
+  check_error_code(ierr.returncode,'Failed to get "nt=" from pfss/pot3d.dat')
+  pot3d_nt=int(ierr.stdout.split('=')[1])
+  Command='grep "np=" pfss/pot3d.dat'
+  ierr = subprocess.run(["bash","-c",Command],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL, text=True)
+  check_error_code(ierr.returncode,'Failed to get "np=" from pfss/pot3d.dat')
+  pot3d_np=int(ierr.stdout.split('=')[1])
+
+  if len(tvec)/pot3d_nt > 0.05 and len(pvec)/pot3d_np > 0.05:
+    print(' ')
+    print('====> WARNING!!!!! ')
+    print('====> The t and p dimentions in the input map are more than 5\% larger than the resolutions of t and p set in the pot3d.dat template file for PFSS ')
+    print('====> Please check the processing of the map.')
+    print(' ')
+  elif len(pvec)/pot3d_np > 0.05:
+    print(' ')
+    print('====> WARNING!!!!! ')
+    print('====> The p dimenion in the input map is more than 5\% larger than the resolution of p set in the pot3d.dat template file for PFSS ')
+    print('====> Please check the processing of the map.')
+    print(' ')
+  elif len(tvec)/pot3d_nt > 0.05:
+    print(' ')
+    print('====> WARNING!!!!! ')
+    print('====> The t dimenion in the input map is more than 5\% larger than the resolution of t set in the pot3d.dat template file for PFSS ')
+    print('====> Please check the processing of the map.')
+
   ps.wrhdf_2d('pfss/br_input_tp.h5',tvec,pvec,data)
     
   print("=> Entering pfss directory and modifying input file... ")
