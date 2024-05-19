@@ -112,7 +112,7 @@ def run(args):
       ' -rss '+str(args.rss)+' -r1 '+str(args.r1)
     if (args.gpu):
       Command=Command+' -gpu'
-    if (args.plot_results):
+    if (not args.plot_results):
       Command=Command+' -noplot'
     ierr = subprocess.run(["bash","-c",Command])
     check_error_code_NON_CRASH(ierr.returncode,'Failed : '+Command)
