@@ -78,7 +78,7 @@ def run(args):
   # Get full path of input directory:
   input_directory = Path(args.input_directory).resolve()
 
-  # Make rundir and go there
+  # Set default output directory if needed.
   if args.outdir is None:
       args.outdir = str(Path('.').resolve())+'/output_swig'
 
@@ -91,7 +91,8 @@ def run(args):
     sys.exit(1)
 
   if args.swig_path is None:
-  	args.swig_path = 'swig.py'
+    pmpdir = sys.path[0]
+    args.swig_path = pmpdir+'/../swig.py'
 
   args.swig_path = str(Path(args.swig_path).resolve())
 
@@ -122,21 +123,6 @@ def run(args):
     ierr = os.system('rm '+args.outdir+'/cs/*')
     check_error_code(ierr,'Failed to remove files from '+args.outdir+'/cs/')
 
-
-# INPUT:  - Map directory (use Path from pathlib to get full path)
-#         - Output directory (default is new local folder called "output_swig")
-#         - [Need rest of swig options to pass to the swig call]
-
-
-# Get list of maps (ls *.h5)
-# Check that there is at least 1 map in the list.
-# Extract index numbers from map name (assume 6-digit *######.h5)
-
-# For each map, run SwiG in output directory
-# swig.py -rundir args.outdir mapname[i] -oidx mapidx[i] [SWIG OPTIONS: -np 1 [-gpu] ]
-# Check for error
-
-# Clear out the pfss and cs directories between each run of swig (in case of errors)
 
 def check_error_code_NON_CRASH(ierr,message):
   if ierr > 0:
