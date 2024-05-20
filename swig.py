@@ -168,7 +168,7 @@ def run(args):
     check_error_code(ierr,'Failed to plot slogq_r0'+idxstr+'.h5')
     ierr = os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label "slog(Q)" -cmin -7     -cmax 7       -ll -finegrid slogq_rss'+idxstr+'.h5 -cmap RdBu       -o slogq_rss'+idxstr+'.png')
     check_error_code(ierr,'Failed to plot slogq_rss'+idxstr+'.h5')
-ierr = os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp                       -cmin -1     -cmax 1       -ll -finegrid   ofm_r0'+idxstr+'.h5                  -o   ofm_r0'+idxstr+'.png')
+    ierr = os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp                       -cmin -1     -cmax 1       -ll -finegrid   ofm_r0'+idxstr+'.h5                  -o   ofm_r0'+idxstr+'.png')
     check_error_code(ierr,'Failed to plot ofm_r0'+idxstr+'.h5')
     ierr = os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label K         -cmin 200000 -cmax 2000000 -ll -finegrid     t_r1'+idxstr+'.h5 -cmap hot        -o     t_r1'+idxstr+'.png')
     check_error_code(ierr,'Failed to plot t_r1'+idxstr+'.h5')
