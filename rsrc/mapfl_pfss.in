@@ -46,6 +46,10 @@
 !
   ebfile='expfac_rss_r0.h5'
 !
+! ****** File name for forward mapping SLOG(Q) factor file:
+!
+  slogqbfile='slogq_rss.h5'
+!
 ! ****** Flag to use different t mesh than that in the B files [.true.|.false.]:
 !
   new_t_mesh=.true.

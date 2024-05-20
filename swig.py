@@ -156,6 +156,8 @@ def run(args):
   check_error_code(ierr,'Failed to copy pfss/slogq_r0.h5 to '+ result_dir + '/slogq_r0'   + idxstr + '.h5')
   ierr = os.system('cp pfss/br_r0_pfss.h5 '+ result_dir + '/br_r0'    + idxstr + '.h5')
   check_error_code(ierr,'Failed to copy pfss/br_r0_pfss.h5 to '+ result_dir + '/br_r0'   + idxstr + '.h5')
+  ierr = os.system('cp pfss/slogq_rss.h5 '  + result_dir + '/slogq_rss' + idxstr + '.h5')
+  check_error_code(ierr,'Failed to copy pfss/slogq_rss.h5 to '+ result_dir + '/slogq_rss'   + idxstr + '.h5')
 
   os.chdir(result_dir)
   if args.plot_results:
@@ -164,7 +166,9 @@ def run(args):
     check_error_code(ierr,'Failed to plot br_r0'+idxstr+'.h5')
     ierr = os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label "slog(Q)" -cmin -7     -cmax 7       -ll -finegrid slogq_r0'+idxstr+'.h5 -cmap RdBu       -o slogq_r0'+idxstr+'.png')
     check_error_code(ierr,'Failed to plot slogq_r0'+idxstr+'.h5')
-    ierr = os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp                       -cmin -1     -cmax 1       -ll -finegrid   ofm_r0'+idxstr+'.h5                  -o   ofm_r0'+idxstr+'.png')
+    ierr = os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label "slog(Q)" -cmin -7     -cmax 7       -ll -finegrid slogq_rss'+idxstr+'.h5 -cmap RdBu       -o slogq_rss'+idxstr+'.png')
+    check_error_code(ierr,'Failed to plot slogq_rss'+idxstr+'.h5')
+ierr = os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp                       -cmin -1     -cmax 1       -ll -finegrid   ofm_r0'+idxstr+'.h5                  -o   ofm_r0'+idxstr+'.png')
     check_error_code(ierr,'Failed to plot ofm_r0'+idxstr+'.h5')
     ierr = os.system(swigdir+'/pot3d/scripts/psi_plot2d -tp -unit_label K         -cmin 200000 -cmax 2000000 -ll -finegrid     t_r1'+idxstr+'.h5 -cmap hot        -o     t_r1'+idxstr+'.png')
     check_error_code(ierr,'Failed to plot t_r1'+idxstr+'.h5')
