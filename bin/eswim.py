@@ -11,7 +11,7 @@ import psi_io as ps
 #           Ronald M. Caplan
 #           Jon A. Linker
 #
-# Version 1.0.1
+# Version 1.0.2
 #
 ########################################################################
 #        Predictive Science Inc.
@@ -120,7 +120,7 @@ def main():
       if (args.wsa_c5 is None):
         args.wsa_c5 = 3.0
     elif args.model == 'psi':
-      if (args.psivslow is None):
+      if (args.psi_vslow is None):
         args.psi_vslow = 250.0
       if (args.psi_vfast is None):
         args.psi_vfast = 650.0
