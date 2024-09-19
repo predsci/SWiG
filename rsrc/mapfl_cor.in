@@ -1,0 +1,83 @@
+&datum
+!
+! ****** File names for input B field:
+!
+  bfile%r='br002.h5'
+  bfile%t='bt002.h5'
+  bfile%p='bp002.h5'
+!
+  r1 = 0
+!
+! ****** Use cubic interpolation for B [.true.|.false.]:
+!
+  cubic=.false.
+!
+! ****** Compute a coronal hole map [.true.|.false.]:
+!
+  compute_ch_map=.true.
+!
+! ****** Radius at which to compute the coronal hole map:
+!
+  ch_map_r=1.
+!
+! ****** File name for the coronal hole map output file:
+!
+  ch_map_output_file='ofm_r0.h5'
+!
+! ****** Trace forward from R0 to R1 [.true.|.false.]:
+!
+  trace_fwd=.true.
+!
+! ****** File name for forward mapping SLOG(Q) factor file:
+!
+  slogqffile='slogq_r0.h5'
+!
+! ****** Trace backward from R1 to R0 [.true.|.false.]:
+!
+  trace_bwd=.true.
+!
+! ****** File name for backward mapping theta file:
+!
+  tbfile='r1_r0_t.h5'
+!
+! ****** File name for backward mapping phi file:
+!
+  pbfile='r1_r0_p.h5'
+!
+! ****** File name for backward mapping expansion factor file:
+!
+  ebfile='expfac_r1_r0.h5'
+!
+! ****** File name for backward mapping SLOG(Q) factor file:
+!
+  slogqbfile='slogq_r1.h5'
+!
+! ****** Flag to use different t mesh than that in the B files [.true.|.false.]:
+!
+  new_t_mesh=.true.
+!
+! ****** Name of a 1D HDF file containing the t mesh [' ' => use a uniform mesh]:
+!
+  mesh_file_t= ' '
+!
+! ****** Number of points in the uniform t mesh:
+!
+  ntss=361
+!
+! ****** Flag to use different p mesh than that in the B files [.true.|.false.]:
+!
+  new_p_mesh=.true.
+!
+! ****** Name of a 1D HDF file containing the p mesh [' ' => use a uniform mesh]:
+!
+  mesh_file_p=' '
+!
+! ****** Number of points in the uniform p mesh:
+!
+  npss=721
+!
+! ****** Write out details of calculation.
+!
+  verbose=1
+/
+! Template input file to trace solution.
