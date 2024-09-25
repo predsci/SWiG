@@ -12,6 +12,10 @@
 !
   cubic=.false.
 !
+! ****** Maximum length of field line.
+!  
+  ds%lmax=10000
+!
 ! ****** Compute a coronal hole map [.true.|.false.]:
 !
   compute_ch_map=.true.

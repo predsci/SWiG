@@ -4,6 +4,7 @@ import sys
 import subprocess
 import numpy as np
 import argparse
+import psi_io as ps
 
 ########################################################################
 #  MAG_TRACE_ANALYSIS_COR #
@@ -40,12 +41,43 @@ def argParsing():
   parser.add_argument('rundir',
     help='Directory of run',
     type=str)   
-    
-    # Br, Bt, and Bp files
-    # R1 (optional)
-    # res_t, res_p (optional)  default detects res and doubles it?  or makes doubel template!
-    # mesh_t, mesh_p (optional templates)
-    # Plots??  With units....
+  
+  parser.add_argument('brfile',help='Name of Br file',type=str)   
+  parser.add_argument('btfile',help='Name of Bt file',type=str) 
+  parser.add_argument('bpfile',help='Name of Bp file',type=str)     
+  
+  parser.add_argument('-r1',
+    help='Outer radius to compute Q, expansion factor, and DCHB (Default is outer boundary of B field)',
+    required=False,
+    type=float,
+    default=0)
+
+  parser.add_argument('-uniform',
+    help='Set uniform resolution for tracing points in theta and phi.  The default is twice the solution resolution, \
+      otherwise one can use the -nt and -np to specify the tracing resolution.  \
+      If not set, the tracing points will mimic the original non-uniform grid but at twice the resolution minus one.',
+    required=False,
+    action='store_true')
+  
+  parser.add_argument('-nt',
+    help='Number of uniform theta points to trace with.',
+    required=False,
+    type=int)  
+
+  parser.add_argument('-np',
+    help='Number of uniform phi points to trace with.',
+    required=False,
+    type=int)      
+  
+  parser.add_argument('-mesh_t',
+    help='Location of custom t mesh to use (full path)',
+    required=False,
+    type=str)
+  
+  parser.add_argument('-mesh_p',
+    help='Location of custom p mesh to use (full path)',
+    required=False,
+    type=str)
 
   return parser.parse_args()
 
@@ -61,7 +93,9 @@ def run(args):
   # MAPFL input files reside.  
   # Here, assume this script is in the "bin" folder of SWiG.
   bindir = sys.path[0]
-  rsrcdir = bindir
+  rsrcdir = bindir+'/../rsrc'
+  rundir = os.path.abspath(args.rundir)
+  psi_plot2d_loc = bindir+'/../pot3d/scripts/psi_plot2d'
 
   # Get filenames of template input files.
   mapfl_file = rsrcdir+'/mapfl_cor.in'
@@ -72,16 +106,52 @@ def run(args):
   # Change directory to the run directory.
   os.chdir(args.rundir)
 
-  # 1) Trace forwards and backwards between r1 and r0:
-  #  - expansion factor at r1 -> expfac_r1_r0.h5
-  #  - Make OFM from r0 to r1 -> ofm_r0.h5 (-1, 0 1)
-  
+  # Setup the COR MAPFL tracing:
+  print("=> Running MAPFL on coronal solution... ")
 
-  # Setup the PFSS MAPFL tracing:
-  print("=> Running MAPFL on MAS solution... ")
-  #os.chdir("pfss")
+  os.makedirs("mag_trace_analysis", exist_ok=True)
+
+  os.chdir("mag_trace_analysis")
+  
   ierr = os.system('cp '+mapfl_file+' mapfl.in')
   check_error_code(ierr,'Failed on copy of '+mapfl_file+' to mapfl.in')
+
+  sed("bfile\%r=","'"+rundir+'/'+args.brfile+"'")
+  sed("bfile\%t=","'"+rundir+'/'+args.btfile+"'")
+  sed("bfile\%p=","'"+rundir+'/'+args.bpfile+"'")
+  sed("r1 = ",str(args.r1))
+
+  if not (args.mesh_t or args.mesh_p):
+    _, tvec, pvec, _ = ps.rdhdf_3d(rundir+'/'+args.brfile)
+
+  if args.mesh_t:
+    sed("mesh_file_t=",args.mesh_t)
+  else:
+    if args.uniform:
+      sed("mesh_file_t=","' '")
+      if args.nt is None:
+        sed("ntss=",str(len(tvec)*2))
+      else:
+        sed("ntss=",str(args.nt))
+    else:
+      tvec_new = add_midpoints(tvec)
+      ps.wrhdf_1d('mesh_file_t_resX2.h5', tvec_new, tvec_new)
+      sed("mesh_file_t=","'mesh_file_t_resX2.h5'")
+
+  if args.mesh_p:
+    sed("mesh_file_p=",args.mesh_p)
+  else:
+    if args.uniform:
+      sed("mesh_file_p=","' '")
+      if args.np is None:
+        sed("npss=",str(len(pvec)*2))
+      else:
+        sed("npss=",str(args.np))
+    else:
+      pvec_new = add_midpoints(pvec)
+      ps.wrhdf_1d('mesh_file_p_resX2.h5', pvec_new, pvec_new)
+      sed("mesh_file_p=","'mesh_file_p_resX2.h5'")
+
   Command=mapfl +' 1>mapfl.log 2>mapfl.err'
   print('   Command: '+Command)
   ierr = subprocess.run(["bash","-c",Command])
@@ -93,10 +163,24 @@ def run(args):
   ierr = os.system('ch_distance.py -t r1_r0_t.h5 -p r1_r0_p.h5 -force_ch -chfile ofm_r0.h5 -dfile dchb_r1.h5')
   check_error_code(ierr,'Failed on : ch_distance.py -t r1_r0_t.h5 -p r1_r0_p.h5 -force_ch -chfile ofm_r0.h5 -dfile dchb_r1.h5')
 
+  print('=> Plotting results...')
+
+  ierr = os.system(psi_plot2d_loc+' -tp -unit_label "slog(Q)" -cmin -7 -cmax 7 -ll -finegrid slogq_r0.h5 -cmap RdBu -o slogq_r0.png')
+  check_error_code(ierr,'Failed to plot slogq_r0.h5')
+
+  ierr = os.system(psi_plot2d_loc+' -tp -unit_label "slog(Q)" -cmin -7 -cmax 7 -ll -finegrid slogq_r1.h5 -cmap RdBu -o slogq_r1.png')
+  check_error_code(ierr,'Failed to plot slogq_r1.h5')
+
+  ierr = os.system(psi_plot2d_loc+' -tp -cmin -1 -cmax 1 -ll -finegrid ofm_r0.h5 -o ofm_r0.png')
+  check_error_code(ierr,'Failed to plot ofm_r0.h5')
+
+  ierr = os.system(psi_plot2d_loc+' -tp -cmin 0 -ll -finegrid dchb_r1.h5 -cmap RdBu         -o dchb_r1.png')
+  check_error_code(ierr,'Failed to plot dchb_r1.h5')
+
+  ierr = os.system(psi_plot2d_loc+' -tp -cmin 0 -cmax 500 -ll -finegrid expfac_r1_r0.h5   -cmap jet -o expfac_r1_r0.png')
+  check_error_code(ierr,'Failed to plot expfac_r1_r0.h5')
+
   print("    ...done!")
-#  os.chdir("..")
-
-
 
 def check_error_code(ierr,message):
   if ierr > 0:
@@ -111,6 +195,17 @@ def check_file_for_line(line_to_check,file,message):
   ierr = 1 if ierr.returncode == 0 else 0
   check_error_code(ierr,message)
 
+def sed(match,value):
+  ierr = os.system('sed -i "s|.*'+match+'.*|  '+match+value+'|" "mapfl.in"')
+  check_error_code(ierr,'Failed on sed of '+value+' for '+match)
+
+def add_midpoints(grid):
+    midpoints = (grid[:-1] + grid[1:]) / 2.0
+    new_grid = np.empty(len(grid) + len(midpoints))
+    new_grid[0::2] = grid 
+    new_grid[1::2] = midpoints
+    return new_grid
+
 def main():
   args = argParsing()
   run(args)
@@ -118,11 +213,4 @@ def main():
 if __name__ == '__main__':
   main()
   
-########################################################################
-#
-# ### CHANGELOG
-#  
-# ### Version 1.0.0, 04/18/2024, modified by RC:
-#       - Initial versioned version.
-#
 ########################################################################
