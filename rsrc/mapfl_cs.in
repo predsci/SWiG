@@ -10,6 +10,10 @@
 !
   cubic=.true.
 !
+! ****** Maximum length of field line.
+!  
+  ds%lmax=10000
+!
 ! ****** Trace backward from R1 to R0 [.true.|.false.]:
 !
   trace_bwd=.true.
