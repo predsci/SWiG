@@ -11,7 +11,7 @@ import psi_io as ps
 #           Ronald M. Caplan
 #           Jon A. Linker
 #
-# Version 1.0.2
+# Version 1.0.3
 #
 ########################################################################
 #        Predictive Science Inc.
@@ -114,7 +114,7 @@ def main():
       if (args.wsa_chd_mult_fac is None):
         args.wsa_chd_mult_fac = 0.8
       if (args.wsa_chd_arg_fac is None):
-        args.wsa_chd_arg_fac = 0.5
+        args.wsa_chd_arg_fac = 1.0
       if (args.wsa_chd_power is None):
         args.wsa_chd_power = 2.0
       if (args.wsa_c5 is None):
