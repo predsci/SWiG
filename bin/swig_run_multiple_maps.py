@@ -5,6 +5,10 @@ import argparse
 import subprocess
 from pathlib import Path
 import re
+import h5py as h5
+import numpy as np
+import psi_io as ps
+import shutil
 
 # INPUT:  - Map directory (use Path from pathlib to get full path)
 #         - Output directory (default is new local folder called "output_swig")
@@ -77,54 +81,83 @@ def run(args):
 
   # Get full path of input directory:
   input_directory = Path(args.input_directory).resolve()
-
+  
   # Set default output directory if needed.
-  if args.outdir is None:
-      args.outdir = str(Path('.').resolve())+'/output_swig'
+  args.outdir = Path(args.outdir or "./output_swig").resolve()
 
   # Get all files in input directory
-  h5_files = sorted(list(input_directory.glob('*.h5')))
+  h5_files = sorted(input_directory.glob("*.h5"))
 
-  if len(h5_files) < 1:
-    print(' ')
-    print('No h5 files found.')
+  if not h5_files:
+    print("\nNo h5 files found.")
     sys.exit(1)
 
-  if args.swig_path is None:
-    pmpdir = sys.path[0]
-    args.swig_path = pmpdir+'/../swig.py'
+  args.swig_path = Path(args.swig_path or f"{sys.path[0]}/../swig.py").resolve()
 
-  args.swig_path = str(Path(args.swig_path).resolve())
-
-  empty_idx=99999
   for h5_file in h5_files:
-    h5_file=str(h5_file)
-    idx=h5_file[-9:-3]
-    if bool(re.search(r'\d{6}',idx)):
-      oidx=' -oidx '+idx
+    if is_3D_hdf(h5_file):
+      rvec = extract_realization(h5_file)
+      process_file(args, h5_file, rvec)
     else:
-      oidx=' -oidx '+str(empty_idx)
-      empty_idx+=1
-
-    print('=> Running map : ' +h5_file.split('/')[-1])
-    Command=args.swig_path+' '+h5_file+' -rundir '+args.outdir+oidx+ \
-      ' -np '+str(args.np)+' -sw_model '+args.sw_model+\
-      ' -rss '+str(args.rss)+' -r1 '+str(args.r1)
-    if (args.gpu):
-      Command=Command+' -gpu'
-    if (not args.plot_results):
-      Command=Command+' -noplot'
-    ierr = subprocess.run(["bash","-c",Command])
-    check_error_code_NON_CRASH(ierr.returncode,'Failed : '+Command)
-
-    print('=> Clearing pfss and cs directory')
-    ierr = os.system('rm '+args.outdir+'/pfss/*')
-    check_error_code(ierr,'Failed to remove files from '+args.outdir+'/pfss/')
-    ierr = os.system('rm '+args.outdir+'/cs/*')
-    check_error_code(ierr,'Failed to remove files from '+args.outdir+'/cs/')
+      process_file(args, h5_file, None)
 
 
-def check_error_code_NON_CRASH(ierr,message):
+def process_file(args, h5_file, rvec):
+  idx_match = re.search(r"idx(\d{6})", str(h5_file))
+  idx = idx_match.group(1) if idx_match else "999999"
+
+  print(f"=> Running map: {h5_file.name}")
+
+  command = (
+    f"{args.swig_path} {h5_file} -rundir {args.outdir} -oidx {idx} "
+    f"-np {args.np} -sw_model {args.sw_model} -rss {args.rss} -r1 {args.r1} ")
+
+  if args.gpu:
+    command += "-gpu "
+  if not args.plot_results:
+    command += "-noplot "
+
+  ierr = subprocess.run(["bash", "-c", command])
+  check_error_code_non_crash(ierr.returncode, f"Failed: {command}")
+
+  print("=> Clearing pfss and cs directories")
+  remove_files(args.outdir, rvec)
+
+
+def remove_files(output_dir, rvec):
+  if rvec is not None:
+    for r in rvec:
+      clear_directory(output_dir / f"r{int(r):06d}/pfss")
+      clear_directory(output_dir / f"r{int(r):06d}/cs")
+  else:
+    clear_directory(output_dir / "pfss")
+    clear_directory(output_dir / "cs")
+
+
+def clear_directory(directory):
+  try:
+    shutil.rmtree(directory, ignore_errors=True)
+  except Exception as e:
+    print(f"Failed to remove files from {directory}: {e}")
+
+
+def extract_realization(file):
+  _, _, rvec, _ = ps.rdhdf_3d(file)
+  return np.array(rvec)
+
+
+def is_3D_hdf(file):
+  with h5.File(file, 'r') as h5file:
+    ndims = np.ndim(h5file["Data"])
+    if ndims == 3:
+      return True
+    elif ndims == 2:
+      return False
+    else:
+      check_error_code(10,'Invalid number of dimensions ({ndims}) in {file_list[0]}') 
+
+
+def check_error_code_non_crash(ierr,message):
   if ierr > 0:
     print(' ')
     print(message)
