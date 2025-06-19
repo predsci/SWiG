@@ -222,7 +222,7 @@ def plot_results(args, swigdir, result_dir):
     ]
     
     for name, label, cmin, cmax, grid, cmap in plots:
-      cmd = (f"{swigdir / 'pot3d' / 'scripts' / 'psi_plot2d'} -tp {'-unit_label ' + label if label else ''} -cmin {cmin} -cmax {cmax} -ll -{grid} {name}{idxstr}.h5 {'-cmap ' + cmap if cmap else ''} -o {name}{idxstr}.png")
+      cmd = (f"{swigdir / 'pot3d' / 'bin' / 'psi_plot2d'} -tp {'-unit_label ' + label if label else ''} -cmin {cmin} -cmax {cmax} -ll -{grid} {name}{idxstr}.h5 {'-cmap ' + cmap if cmap else ''} -o {name}{idxstr}.png")
       ierr = os.system(cmd)
       check_error_code(ierr, f"Failed to plot {name}{idxstr}.h5")
 
@@ -278,5 +278,8 @@ if __name__ == '__main__':
 #
 # ### Version 1.2.1, 05/14/2025, modified by RC:
 #       - Fixed colormap for Q.
+#
+# ### Version 1.2.2, 06/18/2025, modified by RC:
+#       - Updated for new pot3d submodule update.
 #
 ########################################################################
