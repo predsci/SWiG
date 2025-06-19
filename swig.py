@@ -212,8 +212,8 @@ def plot_results(args, swigdir, result_dir):
     idxstr = f"_idx{args.oidx:06d}" if args.oidx is not None else ""
     plots = [
         ('br_r0',     'Gauss',   -20,    20,      'finegrid', None),
-        ('slogq_r0',  '"slog(Q)"', -7,     7,       'finegrid', 'RdBu'),
-        ('slogq_rss', '"slog(Q)"', -7,     7,       'finegrid', 'RdBu'),
+        ('slogq_r0',  '"slog(Q)"', -7,     7,       'finegrid', 'RdBu_r'),
+        ('slogq_rss', '"slog(Q)"', -7,     7,       'finegrid', 'RdBu_r'),
         ('ofm_r0',    None,      -1,     1,       'finegrid', None),
         ('t_r1',      'K',       200000, 2000000, 'finegrid', 'hot'),
         ('rho_r1',    'g/cm^3',  100,    800,     'finegrid', 'gnuplot2_r'),
@@ -275,5 +275,8 @@ if __name__ == '__main__':
 #
 # ### Version 1.2.0, 04/18/2024, modified by MS:
 #       - Added realization support.
+#
+# ### Version 1.2.1, 05/14/2025, modified by RC:
+#       - Fixed colormap for Q.
 #
 ########################################################################

@@ -4,7 +4,7 @@ import argparse
 import string
 import numpy as np
 
-import psihdf as ps
+import psi_io as ps
 
 def get_prefix(s):
     # Define what characters are considered letters
@@ -20,7 +20,7 @@ def get_prefix(s):
 
 def main():
     parser = argparse.ArgumentParser(description="Convert pt h5 files from SWiG into tp h5 files in mas units for use with heliospheric simulations.")
-    parser.add_argument("input_dir", help="Path to the input directory containing SWiG files")
+    parser.add_argument("input_dir", help="Path to the input directory containing SWiG result files")
     parser.add_argument("output_dir", help="Path to the output directory")
     args = parser.parse_args()
 
@@ -32,13 +32,11 @@ def main():
     prefix_units = {
         't': 2.807066716734894e7,
         'vr': 481.371067364613509,
-        'vt': 481.371067364613509,
-        'vp': 481.371067364613509,
         'rho': 1.672600000000000e-16,
         'br': 2.206891397800740,
-        'bt': 2.206891397800740,
-        'bp': 2.206891397800740
     }
+
+# TODO:  Create 2x2 "zero" boundary file for transverse fields and velocities
 
     # Process each .h5 file in the input directory
     for filename in os.listdir(args.input_dir):
@@ -52,9 +50,9 @@ def main():
                 [x,y,data] = ps.rdhdf_2d(os.path.join(args.input_dir, filename))
                 data = np.transpose(data)/unit_fac
 
-# ADD ZERO TRANSVERSE COMPONENTS HERE?  LINK TO FIRST ONE?
-# ADD PROPER REMESH GENERAL?  WHAT GRIDS?
+#TODO:   Create soft links for transverse fields and velocities to zero file created above.
 
+#TODO:   Add remesh options (remesh_general or OFT remesh scripts)?
 
                 output_file = os.path.join(args.output_dir, filename)                
                 ps.wrhdf_2d(output_file,y,x,data)
