@@ -95,7 +95,7 @@ def run(args):
   bindir = sys.path[0]
   rsrcdir = bindir+'/../rsrc'
   rundir = os.path.abspath(args.rundir)
-  psi_plot2d_loc = bindir+'/../pot3d/scripts/psi_plot2d'
+  psi_plot2d_loc = bindir+'/../pot3d/bin/psi_plot2d'
 
   # Get filenames of template input files.
   mapfl_file = rsrcdir+'/mapfl_cor.in'

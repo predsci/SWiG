@@ -46,7 +46,7 @@ fi
 
 echo "==> Appending SWiG and its submodules located at [${swig_dir}] to PATH..."
 
-export PATH=${swig_dir}:${swig_dir}/bin:${swig_dir}/pot3d/bin:${swig_dir}/pot3d/scripts:${swig_dir}/mapfl/bin:$PATH
+export PATH=${swig_dir}:${swig_dir}/bin:${swig_dir}/pot3d/bin:${swig_dir}/pot3d/bin:${swig_dir}/mapfl/bin:$PATH
 
 ${echo} "${cG}==> Done!${cX}"
 
