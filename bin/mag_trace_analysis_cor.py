@@ -112,8 +112,8 @@ def run(args):
   os.makedirs("mag_trace_analysis", exist_ok=True)
 
   os.chdir("mag_trace_analysis")
-  
-  ierr = os.system('cp '+mapfl_file+' mapfl.in')
+
+  ierr = subprocess.run(['cp', mapfl_file, 'mapfl.in']).returncode
   check_error_code(ierr,'Failed on copy of '+mapfl_file+' to mapfl.in')
 
   sed("bfile\%r=","'"+rundir+'/'+args.brfile+"'")

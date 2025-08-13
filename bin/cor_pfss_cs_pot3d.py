@@ -104,7 +104,7 @@ def run(args):
   os.makedirs("pfss", exist_ok=True)
 
   print("=> Copying input file template and input map to pfss directory...")
-  ierr = os.system('cp '+pfss_file+' pfss/pot3d.dat') 
+  ierr = subprocess.run(['cp', pfss_file, 'pfss/pot3d.dat']).returncode
   check_error_code(ierr,'Failed on copy of '+pfss_file+' to pfss/pot3d.dat')
   # Read in input map and write it in tp for use with POT3D:
   xvec,yvec,data = ps.rdhdf_2d(br_input_file)
@@ -168,9 +168,9 @@ def run(args):
   print("=> Making directory to run CS: cs")
   os.makedirs("cs", exist_ok=True)
   print("=> Copying input file template and input map to cs directory...")
-  ierr = os.system('cp '+cs_file+' cs/pot3d.dat')
+  ierr = subprocess.run(['cp', cs_file, 'cs/pot3d.dat']).returncode
   check_error_code(ierr,'Failed on copy of '+cs_file+' to cs/pot3d.dat')
-  ierr = os.system('cp pfss/br_rss.h5 cs/')
+  ierr = subprocess.run(['cp', 'pfss/br_rss.h5', 'cs/']).returncode
   check_error_code(ierr,'Failed on copy of pfss/br_rss.h5 to cs/')
   print("=> Entering cs directory and modifying input file... ")
   os.chdir("cs")
