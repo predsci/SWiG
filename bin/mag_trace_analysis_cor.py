@@ -40,12 +40,12 @@ def argParsing():
 
   parser.add_argument('rundir',
     help='Directory of run',
-    type=str)   
-  
-  parser.add_argument('brfile',help='Name of Br file',type=str)   
-  parser.add_argument('btfile',help='Name of Bt file',type=str) 
-  parser.add_argument('bpfile',help='Name of Bp file',type=str)     
-  
+    type=str)
+
+  parser.add_argument('brfile',help='Name of Br file',type=str)
+  parser.add_argument('btfile',help='Name of Bt file',type=str)
+  parser.add_argument('bpfile',help='Name of Bp file',type=str)
+
   parser.add_argument('-r1',
     help='Outer radius to compute Q, expansion factor, and DCHB (Default is outer boundary of B field)',
     required=False,
@@ -58,22 +58,22 @@ def argParsing():
       If not set, the tracing points will mimic the original non-uniform grid but at twice the resolution minus one.',
     required=False,
     action='store_true')
-  
+
   parser.add_argument('-nt',
     help='Number of uniform theta points to trace with.',
     required=False,
-    type=int)  
+    type=int)
 
   parser.add_argument('-np',
     help='Number of uniform phi points to trace with.',
     required=False,
-    type=int)      
-  
+    type=int)
+
   parser.add_argument('-mesh_t',
     help='Location of custom t mesh to use (full path)',
     required=False,
     type=str)
-  
+
   parser.add_argument('-mesh_p',
     help='Location of custom p mesh to use (full path)',
     required=False,
@@ -89,8 +89,8 @@ def run(args):
   print('===========================================')
   print('===========================================')
 
-  # Get path of the rsrc directory where the template 
-  # MAPFL input files reside.  
+  # Get path of the rsrc directory where the template
+  # MAPFL input files reside.
   # Here, assume this script is in the "bin" folder of SWiG.
   bindir = sys.path[0]
   rsrcdir = bindir+'/../rsrc'
@@ -202,7 +202,7 @@ def sed(match,value):
 def add_midpoints(grid):
     midpoints = (grid[:-1] + grid[1:]) / 2.0
     new_grid = np.empty(len(grid) + len(midpoints))
-    new_grid[0::2] = grid 
+    new_grid[0::2] = grid
     new_grid[1::2] = midpoints
     return new_grid
 
@@ -212,5 +212,5 @@ def main():
 
 if __name__ == '__main__':
   main()
-  
+
 ########################################################################
