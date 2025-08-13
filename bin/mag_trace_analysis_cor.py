@@ -160,8 +160,9 @@ def run(args):
   check_file_for_line(line_to_check,'mapfl.log','Failed : A field line did not reach R0 or R1.')
 
   print("=> Calculating the distance to open field boundaries (DCHB)... ")
-  ierr = os.system('ch_distance.py -t r1_r0_t.h5 -p r1_r0_p.h5 -force_ch -chfile ofm_r0.h5 -dfile dchb_r1.h5')
-  check_error_code(ierr,'Failed on : ch_distance.py -t r1_r0_t.h5 -p r1_r0_p.h5 -force_ch -chfile ofm_r0.h5 -dfile dchb_r1.h5')
+  dchb_command = 'ch_distance.py -t r1_r0_t.h5 -p r1_r0_p.h5 -force_ch -chfile ofm_r0.h5 -dfile dchb_r1.h5'
+  ierr = os.system(dchb_command)
+  check_error_code(ierr,'Failed on : ' + dchb_command)
 
   print('=> Plotting results...')
 
