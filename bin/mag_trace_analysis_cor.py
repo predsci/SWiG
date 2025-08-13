@@ -197,7 +197,10 @@ def check_file_for_line(line_to_check,file,message):
   check_error_code(ierr,message)
 
 def sed(match,value):
-  ierr = os.system('sed -i "s|.*'+match+'.*|  '+match+value+'|" "mapfl.in"')
+  match_pattern = '.*' + match + '.*'
+  replace_pattern = '  ' + match + value
+  sed_directive = 's|' + match_pattern + '|' + replace_pattern + '|'
+  ierr = subprocess.run(['sed', '-i', '', sed_directive, 'mapfl.in']).returncode
   check_error_code(ierr,'Failed on sed of '+value+' for '+match)
 
 def add_midpoints(grid):

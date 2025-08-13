@@ -214,7 +214,10 @@ def run(args):
 #  ps.wrhdf_3d(file3, rvec, tvec1, pvec1, data)
 
 def sed(match,value,file):
-  ierr = os.system('sed -i "s/.*'+match+'=.*/  '+match+'='+value+'/" "'+file+'"')
+  match_pattern = '.*' + match + '=.*'
+  replace_pattern = '  ' + match + '=' + value
+  sed_directive = 's/' + match_pattern + '/' + replace_pattern + '/'
+  ierr = subprocess.run(['sed', '-i', '', sed_directive, file]).returncode
   check_error_code(ierr,'Failed on sed of '+match+' in '+file)
 
 
