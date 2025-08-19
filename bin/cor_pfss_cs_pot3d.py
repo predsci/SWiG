@@ -9,7 +9,7 @@ from pathlib import Path
 import psi_io as ps
 
 ########################################################################
-#  COR_PFSS_CS_POT3D: Coronal magnetic field PFSS+CS model using POT3D 
+#  COR_PFSS_CS_POT3D: Coronal magnetic field PFSS+CS model using POT3D
 ########################################################################
 #        Predictive Science Inc.
 #        www.predsci.com
@@ -77,11 +77,11 @@ def run(args):
   print('===========================')
   print('===========================')
 
-  # Get path of the rsrc directory where the template 
-  # POT3D input files reside.  
+  # Get path of the rsrc directory where the template
+  # POT3D input files reside.
   # Here, assume this script is in the "bin" folder of SWiG.
   rsrcdir = sys.path[0]+'/../rsrc/'
-  
+
   # Get filenames of template input files.
   pfss_file = rsrcdir+'pot3d_pfss.dat'
   cs_file   = rsrcdir+'pot3d_cs.dat'
@@ -104,7 +104,7 @@ def run(args):
   os.makedirs("pfss", exist_ok=True)
 
   print("=> Copying input file template and input map to pfss directory...")
-  ierr = os.system('cp '+pfss_file+' pfss/pot3d.dat') 
+  ierr = subprocess.run(['cp', pfss_file, 'pfss/pot3d.dat']).returncode
   check_error_code(ierr,'Failed on copy of '+pfss_file+' to pfss/pot3d.dat')
   # Read in input map and write it in tp for use with POT3D:
   xvec,yvec,data = ps.rdhdf_2d(br_input_file)
@@ -144,7 +144,7 @@ def run(args):
 #    print('====> Please check the processing of the map.')
 
   ps.wrhdf_2d('pfss/br_input_tp.h5',tvec,pvec,data)
-    
+
   print("=> Entering pfss directory and modifying input file... ")
   os.chdir("pfss")
   sed('r1',str(args.rss),'pot3d.dat')
@@ -157,8 +157,8 @@ def run(args):
   ierr = subprocess.run(["bash","-c",Command])
   check_error_code(ierr.returncode,'Failed : '+Command)
   print("    ...done!")
-  
-  # Create input for CS. Here, we assume no overlap between PFSS 
+
+  # Create input for CS. Here, we assume no overlap between PFSS
   # and CS so we just take the outer slice.
   rvec_pfss, tvec_pfss, pvec_pfss, data_pfss = ps.rdhdf_3d('br_pfss.h5')
   ps.wrhdf_2d('br_rss.h5', tvec_pfss, pvec_pfss, data_pfss[:,:,-1])
@@ -168,9 +168,9 @@ def run(args):
   print("=> Making directory to run CS: cs")
   os.makedirs("cs", exist_ok=True)
   print("=> Copying input file template and input map to cs directory...")
-  ierr = os.system('cp '+cs_file+' cs/pot3d.dat')
+  ierr = subprocess.run(['cp', cs_file, 'cs/pot3d.dat']).returncode
   check_error_code(ierr,'Failed on copy of '+cs_file+' to cs/pot3d.dat')
-  ierr = os.system('cp pfss/br_rss.h5 cs/')
+  ierr = subprocess.run(['cp', 'pfss/br_rss.h5', 'cs/']).returncode
   check_error_code(ierr,'Failed on copy of pfss/br_rss.h5 to cs/')
   print("=> Entering cs directory and modifying input file... ")
   os.chdir("cs")
@@ -186,18 +186,18 @@ def run(args):
   ierr = subprocess.run(["bash","-c",Command])
   check_error_code(ierr.returncode,'Failed : '+Command)
   print("    ...done!")
-  
+
   # Extract (unsigned) outer slice of CS Br for later use.
   rvec_cs, tvec_cs, pvec_cs, data_cs = ps.rdhdf_3d('br_cs.h5')
   ps.wrhdf_2d('br_r1_cs.h5', tvec_cs, pvec_cs, data_cs[:,:,-1])
   os.chdir("..")
-  
+
   print('===========================')
   print('===========================')
   print('=> PFSS+CS model complete!')
   print('===========================')
   print('===========================')
-  
+
   # Merge the two runs [NOT NEEDED FOR NOW - MAYBE LATER]
   #print("=> Merging two runs")
   #concate3D_dim2('pfss/br_pfss.h5','cs/br_cs.h5','br_pfsscs.h5',-1)
@@ -214,7 +214,10 @@ def run(args):
 #  ps.wrhdf_3d(file3, rvec, tvec1, pvec1, data)
 
 def sed(match,value,file):
-  ierr = os.system('sed -i "s/.*'+match+'=.*/  '+match+'='+value+'/" "'+file+'"')
+  match_pattern = '.*' + match + '=.*'
+  replace_pattern = '  ' + match + '=' + value
+  sed_directive = 's/' + match_pattern + '/' + replace_pattern + '/'
+  ierr = subprocess.run(['sed', '-i', '', sed_directive, file]).returncode
   check_error_code(ierr,'Failed on sed of '+match+' in '+file)
 
 
@@ -231,11 +234,11 @@ def main():
 
 if __name__ == '__main__':
   main()
-  
+
 ########################################################################
 #
 # ### CHANGELOG
-#  
+#
 # ### Version 1.0.0, 04/18/2024, modified by RC:
 #       - Initial versioned version.
 #
