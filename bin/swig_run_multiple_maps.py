@@ -40,13 +40,6 @@ def argParsing():
     default=1,
     required=False)
 
-  parser.add_argument('-gpu',
-    help='Indicate that POT3D will be run on GPUs.',
-    dest='gpu',
-    action='store_true',
-    default=False,
-    required=False)
-
   parser.add_argument('-sw_model',
     help='Select solar wind model.',
     dest='sw_model',
@@ -112,8 +105,6 @@ def process_file(args, h5_file, rvec):
     f"{args.swig_path} {h5_file} -rundir {args.outdir} -oidx {idx} "
     f"-np {args.np} -sw_model {args.sw_model} -rss {args.rss} -r1 {args.r1} ")
 
-  if args.gpu:
-    command += "-gpu "
   if not args.plot_results:
     command += "-noplot "
 
@@ -178,3 +169,7 @@ def main():
 
 if __name__ == '__main__':
   main()
+
+# ### Version 1.1.0, 08/19/2025, modified by RC:
+#       - Removed -gpu option as POT3D auto-detects this now.
+

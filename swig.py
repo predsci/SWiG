@@ -65,13 +65,6 @@ def argParsing():
     default=1,
     required=False)
 
-  parser.add_argument('-gpu',
-    help='Indicate that POT3D will be run on GPUs.',
-    dest='gpu',
-    action='store_true',
-    default=False,
-    required=False)
-
   parser.add_argument('-sw_model',
     help='Select solar wind model.',
     dest='sw_model',
@@ -149,8 +142,6 @@ def process_map(args, input_map: str, rundir: Path):
   # Run PF model.
   print('=> Running PFSS+CS model with POT3D:')
   Command=f"{swigdir / 'bin' / 'cor_pfss_cs_pot3d.py'} {input_map} -np {args.np} -rss {args.rss} -r1 {args.r1}"
-  if (args.gpu):
-    Command=f"{Command} -gpu"
   run_command(Command)
   
   # Analyze and compute required quantities from model.
@@ -281,5 +272,8 @@ if __name__ == '__main__':
 #
 # ### Version 1.2.2, 06/18/2025, modified by RC:
 #       - Updated for new pot3d submodule update.
+#
+# ### Version 1.3.0, 08/19/2025, modified by RC:
+#       - Removed -gpu option as POT3D auto-detects this now.
 #
 ########################################################################

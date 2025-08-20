@@ -45,13 +45,6 @@ def argParsing():
     default=1,
     required=False)
 
-  parser.add_argument('-gpu',
-    help='Set flag -gpu to use ifprec=1.',
-    dest='gpu',
-    action='store_true',
-    default=False,
-    required=False)
-
   parser.add_argument('-rss',
     help='Specify the rss distance (default=2.5).',
     dest='rss',
@@ -148,8 +141,6 @@ def run(args):
   print("=> Entering pfss directory and modifying input file... ")
   os.chdir("pfss")
   sed('r1',str(args.rss),'pot3d.dat')
-  if (args.gpu):
-    sed('ifprec','1','pot3d.dat')
 
   print("=> Running POT3D for PFSS...")
   Command='mpiexec -np '+str(args.np)+' '+pot3d +' 1>pot3d.log 2>pot3d.err'
@@ -176,8 +167,6 @@ def run(args):
   os.chdir("cs")
   sed('r0',str(args.rss),'pot3d.dat')
   sed('r1',str(args.r1),'pot3d.dat')
-  if (args.gpu):
-    sed('ifprec','1','pot3d.dat')
 
   # CS POT3D
   print("=> Running POT3D for CS...")
@@ -241,5 +230,8 @@ if __name__ == '__main__':
 #
 # ### Version 1.0.0, 04/18/2024, modified by RC:
 #       - Initial versioned version.
+#
+# ### Version 1.1.0, 08/19/2025, modified by RC:
+#       - Removed -gpu option as POT3D auto-detects this now.
 #
 ########################################################################

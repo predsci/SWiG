@@ -50,7 +50,7 @@ Next, for many input Br maps, it is recommended to process the maps using the ma
   
 Run the main script `swig.py` with the desired options:  
 ```
-usage: swig.py [-h] [-oidx OIDX] [-rundir RUNDIR] [-np NP] [-gpu] [-sw_model SW_MODEL] [-rss RSS] [-r1 R1] [-noplot] input_map
+usage: swig.py [-h] [-oidx OIDX] [-rundir RUNDIR] [-np NP] [-sw_model SW_MODEL] [-rss RSS] [-r1 R1] [-noplot] input_map
 
 positional arguments:
   input_map           Input Br full-Sun magnetogram (h5).
@@ -60,7 +60,6 @@ optional arguments:
   -oidx OIDX          Index to use for output file names).
   -rundir RUNDIR      Directory where run will go.
   -np NP              Number of MPI processes (ranks)
-  -gpu                Indicate that POT3D will be run on GPUs.
   -sw_model SW_MODEL  Select solar wind model.
   -rss RSS            Set source surface radius (default 2.5 Rs).
   -r1 R1              Set outer radius (default 21.5 Rs).
