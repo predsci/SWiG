@@ -205,10 +205,9 @@ def run(args):
 def sed(match,value,file):
   match_pattern = '.*' + match + '=.*'
   replace_pattern = '  ' + match + '=' + value
-  sed_directive = 's/' + match_pattern + '/' + replace_pattern + '/'
-  ierr = subprocess.run(['sed', '-i', '', sed_directive, file]).returncode
-  check_error_code(ierr,'Failed on sed of '+match+' in '+file)
-
+  sed_directive = f's/{match_pattern}/{replace_pattern}/'
+  ierr = subprocess.run(['sed', '-i', sed_directive, file]).returncode
+  check_error_code(ierr, 'Failed on sed of '+match+' in '+file)
 
 def check_error_code(ierr,message):
   if ierr > 0:
@@ -233,5 +232,8 @@ if __name__ == '__main__':
 #
 # ### Version 1.1.0, 08/19/2025, modified by RC:
 #       - Removed -gpu option as POT3D auto-detects this now.
+#
+# ### Version 1.1.1, 09/03/2025, modified by RC:
+#       - Fixed sed bug.
 #
 ########################################################################

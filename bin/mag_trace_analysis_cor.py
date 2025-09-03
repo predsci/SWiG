@@ -197,11 +197,11 @@ def check_file_for_line(line_to_check,file,message):
   check_error_code(ierr,message)
 
 def sed(match,value):
-  match_pattern = '.*' + match + '.*'
-  replace_pattern = '  ' + match + value
-  sed_directive = 's|' + match_pattern + '|' + replace_pattern + '|'
-  ierr = subprocess.run(['sed', '-i', '', sed_directive, 'mapfl.in']).returncode
-  check_error_code(ierr,'Failed on sed of '+value+' for '+match)
+  match_pattern = '.*' + match + '=.*'
+  replace_pattern = '  ' + match + '=' + value
+  sed_directive = f's/{match_pattern}/{replace_pattern}/'
+  ierr = subprocess.run(['sed', '-i', sed_directive, 'mapfl.in']).returncode
+  check_error_code(ierr, 'Failed on sed of '+match+' in '+file)
 
 def add_midpoints(grid):
     midpoints = (grid[:-1] + grid[1:]) / 2.0
@@ -217,4 +217,14 @@ def main():
 if __name__ == '__main__':
   main()
 
+########################################################################
+#
+# ### CHANGELOG
+#
+# ### Version 1.0.0, 04/18/2024, modified by RC:
+#       - Initial versioned version.
+#
+# ### Version 1.0.1, 09/03/2025, modified by RC:
+#       - Fixed sed bug.
+#
 ########################################################################
