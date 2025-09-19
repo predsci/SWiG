@@ -47,6 +47,17 @@ def argParsing():
     default='wsa2',
     required=False)
 
+  parser.add_argument('-sw_model_params',
+    help='Flags to pass to the solar wind model generation script eswim.py.\
+          For WSA2:  -vslow <#> -vfast <#> -c1 <#> -c2 <#> -c3_i <#> -c4 <#> -c5 <#>\
+          For WSA:   -vslow <#> -vfast <#> -c1 <#> -c2 <#> -c3_i <#> -c4 <#> -vmax <#>\
+          For PSI:   -vslow <#> -vfast <#> -psi_eps <#> -psi_width <#>\
+          For all models:  -rhofast <#> -tfast <#>',
+    dest='sw_model_params',
+    type=str,
+    default='',
+    required=False)
+
   parser.add_argument('-rss',
     help='Set source surface radius (default 2.5 Rs).',
     dest='rss',
@@ -59,6 +70,13 @@ def argParsing():
     dest='r1',
     type=float,
     default=21.5,
+    required=False)
+    
+  parser.add_argument('-r0_trace',
+    help='Set inner radius to trace field lines to/from (default is 1.0).',
+    dest='r0_trace',
+    type=float,
+    default=1.0,
     required=False)
 
   parser.add_argument('-noplot',
@@ -101,9 +119,12 @@ def process_file(args, h5_file, rvec):
 
   print(f"=> Running map: {h5_file.name}")
 
+  r0_trace_str = f"-r0_trace {arg.r0_trace}"
+  
   command = (
     f"{args.swig_path} {h5_file} -rundir {args.outdir} -oidx {idx} "
-    f"-np {args.np} -sw_model {args.sw_model} -rss {args.rss} -r1 {args.r1} ")
+    f"-np {args.np} -sw_model {args.sw_model} {r0_trace_str}"
+    f"-sw_model_params {args.sw_model_params} -rss {args.rss} -r1 {args.r1} ")
 
   if not args.plot_results:
     command += "-noplot "
@@ -172,4 +193,5 @@ if __name__ == '__main__':
 
 # ### Version 1.1.0, 08/19/2025, modified by RC:
 #       - Removed -gpu option as POT3D auto-detects this now.
-
+# ### Version 2.0.0, 09/18/2025, modified by RC:
+#      - Added new swig options.

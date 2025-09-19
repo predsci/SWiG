@@ -43,8 +43,22 @@ def argParsing():
   parser.add_argument('rundir',
     help='Directory of run (where PFSS and CS were computed)',
     type=str)   
+    
+  parser.add_argument('-r0_trace',
+    help='Set inner radius to trace field lines to/from (default is rmin of PFSS).',
+    dest='r0_trace',
+    type=float,
+    default=1.0,
+    required=False)
 
   return parser.parse_args()
+
+def sed(match,value,file):
+  match_pattern = '.*' + match + '=.*'
+  replace_pattern = '  ' + match + '=' + value
+  sed_directive = f's/{match_pattern}/{replace_pattern}/'
+  ierr = subprocess.run(['sed', '-i', sed_directive, file]).returncode
+  check_error_code(ierr, 'Failed on sed of '+match+' in '+file)
 
 def run(args):
 
@@ -82,6 +96,11 @@ def run(args):
   os.chdir("pfss")
   ierr = os.system('cp '+pfss_file+' mapfl.in')
   check_error_code(ierr,'Failed on copy of '+pfss_file+' to mapfl.in')
+
+  # Set the lower tracing limits:
+  sed('ch_map_r',str(args.r0_trace),'mapfl.in')
+  sed('domain_r_min',str(args.r0_trace),'mapfl.in')
+
   Command=mapfl +' 1>mapfl.log 2>mapfl.err'
   print('   Command: '+Command)
   ierr = subprocess.run(["bash","-c",Command])
@@ -209,5 +228,8 @@ if __name__ == '__main__':
 #  
 # ### Version 1.0.0, 04/18/2024, modified by RC:
 #       - Initial versioned version.
+#
+# ### Version 2.0.0, 09/18/2025, modified by RC:
+#       - Added r0_trace to set lower trace radius.
 #
 ########################################################################

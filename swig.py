@@ -5,10 +5,11 @@ import numpy as np
 import argparse
 import subprocess
 from pathlib import Path
-import h5py as h5
-import bin.psi_io as ps
 import shutil
 import re
+import h5py as h5
+
+import bin.psi_io as ps
 
 ########################################################################
 # SWiG:  Solar Wind Generator
@@ -72,6 +73,17 @@ def argParsing():
     default='wsa2',
     required=False)
 
+  parser.add_argument('-sw_model_params',
+    help='Flags to pass to the solar wind model generation script eswim.py.\
+          For WSA2:  -vslow <#> -vfast <#> -c1 <#> -c2 <#> -c3_i <#> -c4 <#> -c5 <#>\
+          For WSA:   -vslow <#> -vfast <#> -c1 <#> -c2 <#> -c3_i <#> -c4 <#> -vmax <#>\
+          For PSI:   -vslow <#> -vfast <#> -psi_eps <#> -psi_width <#>\
+          For all models:  -rhofast <#> -tfast <#>',
+    dest='sw_model_params',
+    type=str,
+    default='',
+    required=False)
+
   parser.add_argument('-rss',
     help='Set source surface radius (default 2.5 Rs).',
     dest='rss',
@@ -84,6 +96,13 @@ def argParsing():
     dest='r1',
     type=float,
     default=21.5,
+    required=False)
+    
+  parser.add_argument('-r0_trace',
+    help='Set inner radius to trace field lines to/from (default is 1.0).',
+    dest='r0_trace',
+    type=float,
+    default=1.0,
     required=False)
 
   parser.add_argument('-noplot',
@@ -108,7 +127,7 @@ def run(args):
 
   # Make the run folder
   args.rundir.mkdir(parents=True, exist_ok=True)
-  
+
   # Check if the hdf is 3D or 2D
   if is_3D_hdf(args.input_map):
     # If 3D extact realizations and process individually
@@ -122,7 +141,7 @@ def run(args):
       rundir = args.rundir / f'r{match.group(1)}' if match else args.rundir
       rundir.mkdir(exist_ok=True)
       process_map(args, file, rundir)
-        
+
     shutil.rmtree(temp_dir)
   else:
     # Process 2D file
@@ -139,19 +158,22 @@ def process_map(args, input_map: str, rundir: Path):
   # Get path of the SWiG directory
   swigdir = Path(sys.path[0])
 
+  # [][RC][]: ADD RESOLUTION CHECK HERE, STORE FOR USE IN PFSS/CS/MAPFL/EMP-PARAM-C3
+
   # Run PF model.
   print('=> Running PFSS+CS model with POT3D:')
   Command=f"{swigdir / 'bin' / 'cor_pfss_cs_pot3d.py'} {input_map} -np {args.np} -rss {args.rss} -r1 {args.r1}"
   run_command(Command)
-  
+
   # Analyze and compute required quantities from model.
   print('=> Running magnetic tracing analysis:')
-  Command=f"{swigdir / 'bin' / 'mag_trace_analysis.py'} ."
+
+  Command=f"{swigdir / 'bin' / 'mag_trace_analysis.py'} -r0_trace {args.r0_trace} ."
   run_command(Command)
 
   # Generate solar wind model.
   print('=> Running emperical solar wind model:')
-  Command=f"{swigdir / 'bin' / 'eswim.py'} -dchb dchb_at_r1.h5 -expfac expfac_rss_at_r1.h5 -model {args.sw_model}"
+  Command=f"{swigdir / 'bin' / 'eswim.py'} -dchb dchb_at_r1.h5 -expfac expfac_rss_at_r1.h5 -model {args.sw_model}  {args.sw_model_params}"
   run_command(Command)
 
   # Collect results and plot everything if selected.
@@ -160,8 +182,6 @@ def process_map(args, input_map: str, rundir: Path):
     
   if args.plot_results:
     plot_results(args, swigdir, result_dir)
-    
-    print(f"=> SWiG complete!\n=> Results can be found here: {rundir / 'results'}")
 
   print('=> SWiG complete!')
   print('=> Results can be found here:  ')
@@ -179,7 +199,7 @@ def collect_results(args, rundir):
   idxstr = f"_idx{args.oidx:06d}" if args.oidx is not None else ""
   files_to_move = ["br_r1.h5", "vr_r1.h5", "t_r1.h5", "rho_r1.h5"]
   files_to_copy = {"pfss/ofm_r0.h5": "ofm_r0", "pfss/slogq_r0.h5": "slogq_r0", "pfss/br_r0_pfss.h5": "br_r0", "pfss/slogq_rss.h5": "slogq_rss"}
-    
+
   for file in files_to_move:
     move_file(file, result_dir / f"{Path(file).stem}{idxstr}.h5")
   for src, dest in files_to_copy.items():
@@ -202,16 +222,16 @@ def plot_results(args, swigdir, result_dir):
     print("=> Plotting results...")
     idxstr = f"_idx{args.oidx:06d}" if args.oidx is not None else ""
     plots = [
-        ('br_r0',     'Gauss',   -20,    20,      'finegrid', None),
-        ('slogq_r0',  '"slog(Q)"', -7,     7,       'finegrid', 'RdBu_r'),
-        ('slogq_rss', '"slog(Q)"', -7,     7,       'finegrid', 'RdBu_r'),
-        ('ofm_r0',    None,      -1,     1,       'finegrid', None),
+        ('br_r0',     'Gauss',   -20,    20,      'finegrid', 'psi_red_blue'),
+        ('slogq_r0',  '"slogQ"', -7,     7,       'finegrid', 'RdBu_r'),
+        ('slogq_rss', '"slogQ"', -7,     7,       'finegrid', 'RdBu_r'),
+        ('ofm_r0',    None,      -1,     1,       'finegrid', 'psi_red_blue'),
         ('t_r1',      'K',       200000, 2000000, 'finegrid', 'hot'),
         ('rho_r1',    'g/cm^3',  100,    800,     'finegrid', 'gnuplot2_r'),
-        ('vr_r1',     'km/s',    200,    700,     'finegrid', 'jet'),
-        ('br_r1',     'Gauss',   -0.002, 0.002,   'finegrid', None)
+        ('vr_r1',     'km/s',    200,    800,     'finegrid', 'rainbow'),
+        ('br_r1',     'Gauss',   -0.002, 0.002,   'finegrid', 'psi_red_blue')
     ]
-    
+
     for name, label, cmin, cmax, grid, cmap in plots:
       cmd = (f"{swigdir / 'pot3d' / 'bin' / 'psi_plot2d'} -tp {'-unit_label ' + label if label else ''} -cmin {cmin} -cmax {cmax} -ll -{grid} {name}{idxstr}.h5 {'-cmap ' + cmap if cmap else ''} -o {name}{idxstr}.png")
       ierr = os.system(cmd)
@@ -275,5 +295,9 @@ if __name__ == '__main__':
 #
 # ### Version 1.3.0, 08/19/2025, modified by RC:
 #       - Removed -gpu option as POT3D auto-detects this now.
+#
+# ### Version 1.4.0, 09/10/2025, modified by RC:
+#       - Added -sw_model_params to pass solar wind parameters to 
+#         solar wind generator script eswim.py.
 #
 ########################################################################

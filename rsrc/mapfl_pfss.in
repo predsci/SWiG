@@ -20,7 +20,11 @@
 !
 ! ****** Radius at which to compute the coronal hole map:
 !
-  ch_map_r=1.
+  ch_map_r=1.0
+!
+! ****** Radius at which to compute the other tracings:
+!  
+  domain_r_min=1.0
 !
 ! ****** File name for the coronal hole map output file:
 !

@@ -1,0 +1,1 @@
+swig.py -rundir $PWD/run -np 1 -sw_model wsa2 -sw_model_params "-c2 0.805" -rss 2.51 -r1 30.0 -r0_trace 1.01 hmi_synoptic_mr_polfil_720s_cr2218_binned_smoothed_flxbln_361x181.h5
