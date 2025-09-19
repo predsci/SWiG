@@ -7,9 +7,12 @@
 --------------------------------  
   
 ## OVERVIEW  
-`SWiG` is a code pacakge that generates emperical solar wind solutions (WSA or DCHB) using potential field source surface (PFSS) and current sheet (CS) models of the coronal magnetic field.
+`SWiG` is a code pacakge that generates emperical solar wind   
+solutions (WSA or DCHB) using potential field source surface  
+(PFSS) and current sheet (CS) models of the coronal magnetic field.
   
-SWiG includes the potential field solver [POT3D](https;//github.com/predsci/pot3d) and the field line tracer [MapFL](https;//github.com/predsci/mapfl) as submodules.
+SWiG includes the potential field solver [POT3D](https;//github.com/predsci/pot3d)  
+and the field line tracer [MapFL](https;//github.com/predsci/mapfl) as submodules.
   
 --------------------------------  
   
@@ -50,20 +53,31 @@ Next, for many input Br maps, it is recommended to process the maps using the ma
   
 Run the main script `swig.py` with the desired options:  
 ```
-usage: swig.py [-h] [-oidx OIDX] [-rundir RUNDIR] [-np NP] [-sw_model SW_MODEL] [-rss RSS] [-r1 R1] [-noplot] input_map
+usage: swig.py input_map [-h] [-oidx OIDX] [-rnum RNUM] 
+                         [-rundir RUNDIR] [-np NP] [-sw_model SW_MODEL]
+                         [-sw_model_params SW_MODEL_PARAMS] [-rss RSS] 
+                         [-r1 R1] [-r0_trace R0_TRACE] [-noplot] 
 
 positional arguments:
-  input_map           Input Br full-Sun magnetogram (h5).
+  input_map             Input Br full-Sun magnetogram (h5).
 
 optional arguments:
-  -h, --help          show this help message and exit
-  -oidx OIDX          Index to use for output file names).
-  -rundir RUNDIR      Directory where run will go.
-  -np NP              Number of MPI processes (ranks)
-  -sw_model SW_MODEL  Select solar wind model.
-  -rss RSS            Set source surface radius (default 2.5 Rs).
-  -r1 R1              Set outer radius (default 21.5 Rs).
-  -noplot             Do not plot results
+  -h, --help            Show this help message and exit
+  -oidx                 Index to use for output file names.
+  -rnum                 Realization number to use for output file names (Default None).
+  -rundir               Directory where run will go.
+  -np                   Number of MPI processes (ranks)
+  -sw_model             Select solar wind model (Options: wsa, wsa2, psi)
+  -sw_model_params      Flags to pass to the solar wind model generation script eswim.py.
+                        WSA2: -vslow <#> -vfast <#> -c1 <#> -c2 <#> -c3_i <#> -c4 <#> -c5 <#>
+                        WSA:  -vslow <#> -vfast <#> -c1 <#> -c2 <#> -c3_i <#> -c4 <#> -vmax <#>
+                        PSI:  -vslow <#> -vfast <#> -psi_eps <#> -psi_width <#> 
+                        For all models:
+                        -rhofast <#> -tfast <#>
+  -rss                  Set source surface radius (default 2.5 Rs).
+  -r1                   Set outer radius (default 21.5 Rs).
+  -r0_trace             Set inner radius to trace field lines to/from (default is 1.0 Rs).
+  -noplot               Do not plot results
 ```  
 When the run is complete, the directory where the results can be found will be displayed.  
 
