@@ -36,15 +36,22 @@ import psi_io as ps
 ########################################################################
 
 def argParsing():
-  parser = argparse.ArgumentParser(description='Generate.')
+  parser = argparse.ArgumentParser(description='Get magnetic field tracing analysis quantities given a MAS MHD coronal solution.')
 
   parser.add_argument('rundir',
-    help='Directory of run',
+    help='Directory of run (where MHD was computed)',
     type=str)
 
   parser.add_argument('brfile',help='Name of Br file',type=str)
   parser.add_argument('btfile',help='Name of Bt file',type=str)
   parser.add_argument('bpfile',help='Name of Bp file',type=str)
+
+  parser.add_argument('-r0_trace',
+    help='Set inner radius to trace field lines to/from (default is rmin of PFSS).',
+    dest='r0_trace',
+    type=float,
+    default=1.0,
+    required=False)
 
   parser.add_argument('-r1',
     help='Outer radius to compute Q, expansion factor, and DCHB (Default is outer boundary of B field)',
@@ -81,6 +88,36 @@ def argParsing():
 
   return parser.parse_args()
 
+def get_sed_command():
+  """Detect which sed command to use and return appropriate arguments.
+  
+  Returns: (sed_cmd, suffix_args) where suffix_args is [''] for BSD sed or [] for GNU sed
+  """
+  # First check if gsed (GNU sed) is available
+  result = subprocess.run(['which', 'gsed'], capture_output=True, text=True)
+  if result.returncode == 0:
+    return ('gsed', [])
+  
+  # Check if system sed is GNU sed by testing --version flag
+  result = subprocess.run(['sed', '--version'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+  if result.returncode == 0:
+    # GNU sed supports --version
+    return ('sed', [])
+  else:
+    # BSD sed (macOS) doesn't support --version and requires '' after -i
+    return ('sed', [''])
+
+# Cache the sed command detection
+_sed_cmd, _sed_suffix = get_sed_command()
+
+def sed(match,value,file):
+  match_pattern = '.*' + match + '=.*'
+  replace_pattern = '  ' + match + '=' + value
+  sed_directive = f's@{match_pattern}@{replace_pattern}@'
+  cmd = [_sed_cmd, '-i'] + _sed_suffix + [sed_directive, file]
+  ierr = subprocess.run(cmd).returncode
+  check_error_code(ierr, 'Failed on sed of '+match+' in '+file)
+
 def run(args):
 
   print('===========================================')
@@ -93,7 +130,7 @@ def run(args):
   # MAPFL input files reside.
   # Here, assume this script is in the "bin" folder of SWiG.
   bindir = sys.path[0]
-  rsrcdir = bindir+'/../rsrc'
+  rsrcdir = bindir+'/../rsrc/'
   rundir = os.path.abspath(args.rundir)
   psi_plot2d_loc = bindir+'/../pot3d/bin/psi_plot2d'
 
@@ -101,7 +138,7 @@ def run(args):
   mapfl_file = rsrcdir+'/mapfl_cor.in'
   print('=> MAPFL input template used for MAS: '+mapfl_file)
 
-  mapfl='mapfl'
+  mapfl=bindir+'/../mapfl/bin/mapfl'
 
   # Change directory to the run directory.
   os.chdir(args.rundir)
@@ -116,41 +153,45 @@ def run(args):
   ierr = subprocess.run(['cp', mapfl_file, 'mapfl.in']).returncode
   check_error_code(ierr,'Failed on copy of '+mapfl_file+' to mapfl.in')
 
-  sed("bfile\%r=","'"+rundir+'/'+args.brfile+"'")
-  sed("bfile\%t=","'"+rundir+'/'+args.btfile+"'")
-  sed("bfile\%p=","'"+rundir+'/'+args.bpfile+"'")
-  sed("r1 = ",str(args.r1))
+  sed("bfile%r","'"+rundir+'/'+args.brfile+"'",'mapfl.in')
+  sed("bfile%t","'"+rundir+'/'+args.btfile+"'",'mapfl.in')
+  sed("bfile%p","'"+rundir+'/'+args.bpfile+"'",'mapfl.in')
+  sed("r1 = ",str(args.r1),'mapfl.in')
 
   if not (args.mesh_t or args.mesh_p):
     _, tvec, pvec, _ = ps.rdhdf_3d(rundir+'/'+args.brfile)
 
   if args.mesh_t:
-    sed("mesh_file_t=",args.mesh_t)
+    sed("mesh_file_t",args.mesh_t,'mapfl.in')
   else:
     if args.uniform:
-      sed("mesh_file_t=","' '")
+      sed("mesh_file_t","' '",'mapfl.in')
       if args.nt is None:
-        sed("ntss=",str(len(tvec)*2))
+        sed("ntss",str(len(tvec)*2),'mapfl.in')
       else:
-        sed("ntss=",str(args.nt))
+        sed("ntss",str(args.nt),'mapfl.in')
     else:
       tvec_new = add_midpoints(tvec)
       ps.wrhdf_1d('mesh_file_t_resX2.h5', tvec_new, tvec_new)
-      sed("mesh_file_t=","'mesh_file_t_resX2.h5'")
+      sed("mesh_file_t","'mesh_file_t_resX2.h5'",'mapfl.in')
 
   if args.mesh_p:
-    sed("mesh_file_p=",args.mesh_p)
+    sed("mesh_file_p=",args.mesh_p,'mapfl.in')
   else:
     if args.uniform:
-      sed("mesh_file_p=","' '")
+      sed("mesh_file_p","' '",'mapfl.in')
       if args.np is None:
-        sed("npss=",str(len(pvec)*2))
+        sed("npss",str(len(pvec)*2),'mapfl.in')
       else:
-        sed("npss=",str(args.np))
+        sed("npss",str(args.np),'mapfl.in')
     else:
       pvec_new = add_midpoints(pvec)
       ps.wrhdf_1d('mesh_file_p_resX2.h5', pvec_new, pvec_new)
-      sed("mesh_file_p=","'mesh_file_p_resX2.h5'")
+      sed("mesh_file_p","'mesh_file_p_resX2.h5'",'mapfl.in')
+
+  # Set the lower tracing limits and dimensions:
+  sed('ch_map_r',str(args.r0_trace),'mapfl.in')
+  sed('domain_r_min',str(args.r0_trace),'mapfl.in')
 
   Command=mapfl +' 1>mapfl.log 2>mapfl.err'
   print('   Command: '+Command)
@@ -196,13 +237,6 @@ def check_file_for_line(line_to_check,file,message):
   ierr = 1 if ierr.returncode == 0 else 0
   check_error_code(ierr,message)
 
-def sed(match,value):
-  match_pattern = '.*' + match + '=.*'
-  replace_pattern = '  ' + match + '=' + value
-  sed_directive = f's/{match_pattern}/{replace_pattern}/'
-  ierr = subprocess.run(['sed', '-i', sed_directive, 'mapfl.in']).returncode
-  check_error_code(ierr, 'Failed on sed of '+match+' in '+file)
-
 def add_midpoints(grid):
     midpoints = (grid[:-1] + grid[1:]) / 2.0
     new_grid = np.empty(len(grid) + len(midpoints))
@@ -226,5 +260,8 @@ if __name__ == '__main__':
 #
 # ### Version 1.0.1, 09/03/2025, modified by RC:
 #       - Fixed sed bug.
+#
+# ### Version 1.1.0, 11/05/2025, modified by MS:
+#       - Changed sed command so it can also work on macOS.
 #
 ########################################################################

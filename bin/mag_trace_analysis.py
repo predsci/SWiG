@@ -38,12 +38,12 @@ import psi_io as ps
 ########################################################################
 
 def argParsing():
-  parser = argparse.ArgumentParser(description='Generate PFSS and CS solutions given an input magnetic full-Sun map.')
+  parser = argparse.ArgumentParser(description='Get magnetic field tracing analysis quantities given a PFSS and CS coronal solution.')
 
   parser.add_argument('rundir',
     help='Directory of run (where PFSS and CS were computed)',
-    type=str)   
-    
+    type=str)
+
   parser.add_argument('-r0_trace',
     help='Set inner radius to trace field lines to/from (default is rmin of PFSS).',
     dest='r0_trace',
@@ -53,11 +53,34 @@ def argParsing():
 
   return parser.parse_args()
 
+def get_sed_command():
+  """Detect which sed command to use and return appropriate arguments.
+  
+  Returns: (sed_cmd, suffix_args) where suffix_args is [''] for BSD sed or [] for GNU sed
+  """
+  # First check if gsed (GNU sed) is available
+  result = subprocess.run(['which', 'gsed'], capture_output=True, text=True)
+  if result.returncode == 0:
+    return ('gsed', [])
+  
+  # Check if system sed is GNU sed by testing --version flag
+  result = subprocess.run(['sed', '--version'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+  if result.returncode == 0:
+    # GNU sed supports --version
+    return ('sed', [])
+  else:
+    # BSD sed (macOS) doesn't support --version and requires '' after -i
+    return ('sed', [''])
+
+# Cache the sed command detection
+_sed_cmd, _sed_suffix = get_sed_command()
+
 def sed(match,value,file):
   match_pattern = '.*' + match + '=.*'
   replace_pattern = '  ' + match + '=' + value
-  sed_directive = f's/{match_pattern}/{replace_pattern}/'
-  ierr = subprocess.run(['sed', '-i', sed_directive, file]).returncode
+  sed_directive = f's@{match_pattern}@{replace_pattern}@'
+  cmd = [_sed_cmd, '-i'] + _sed_suffix + [sed_directive, file]
+  ierr = subprocess.run(cmd).returncode
   check_error_code(ierr, 'Failed on sed of '+match+' in '+file)
 
 def run(args):
@@ -68,8 +91,8 @@ def run(args):
   print('===========================================')
   print('===========================================')
 
-  # Get path of the rsrc directory where the template 
-  # MAPFL input files reside.  
+  # Get path of the rsrc directory where the template
+  # MAPFL input files reside.
   # Here, assume this script is in the "bin" folder of SWiG.
   bindir = sys.path[0]
   rsrcdir = bindir+'/../rsrc/'
@@ -97,9 +120,15 @@ def run(args):
   ierr = os.system('cp '+pfss_file+' mapfl.in')
   check_error_code(ierr,'Failed on copy of '+pfss_file+' to mapfl.in')
 
-  # Set the lower tracing limits:
+  tvec, pvec, _ = ps.rdhdf_2d('br_input_tp.h5')
+  ntss = len(tvec)
+  npss = len(pvec)
+  
+  # Set the lower tracing limits and dimensions:
   sed('ch_map_r',str(args.r0_trace),'mapfl.in')
   sed('domain_r_min',str(args.r0_trace),'mapfl.in')
+  sed('ntss',str((ntss - 1) * 2 + 1),'mapfl.in')
+  sed('npss',str((npss - 1) * 2 + 1),'mapfl.in')
 
   Command=mapfl +' 1>mapfl.log 2>mapfl.err'
   print('   Command: '+Command)
@@ -120,6 +149,8 @@ def run(args):
   os.chdir("cs")
   ierr = os.system('cp '+cs_file+' mapfl.in')
   check_error_code(ierr,'Failed on copy of '+cs_file+' to mapfl.in')
+  sed('ntss', str(ntss), 'mapfl.in')
+  sed('npss', str(npss), 'mapfl.in')
   Command=mapfl +' 1>mapfl.log 2>mapfl.err'
   print('   Command: '+Command)
   ierr = subprocess.run(["bash","-c",Command])
@@ -221,15 +252,19 @@ def main():
 
 if __name__ == '__main__':
   main()
-  
+
 ########################################################################
 #
 # ### CHANGELOG
-#  
+#
 # ### Version 1.0.0, 04/18/2024, modified by RC:
 #       - Initial versioned version.
 #
 # ### Version 2.0.0, 09/18/2025, modified by RC:
 #       - Added r0_trace to set lower trace radius.
+#
+# ### Version 2.1.0, 11/05/2025, modified by MS:
+#       - MAPFL resolution is now autoset based on the POT3D run size.
+#       - Changed sed command so it can also work on macOS.
 #
 ########################################################################

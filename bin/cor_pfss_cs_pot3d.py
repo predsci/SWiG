@@ -96,9 +96,6 @@ def run(args):
   print("=> Making directory to run PFSS: pfss")
   os.makedirs("pfss", exist_ok=True)
 
-  print("=> Copying input file template and input map to pfss directory...")
-  ierr = subprocess.run(['cp', pfss_file, 'pfss/pot3d.dat']).returncode
-  check_error_code(ierr,'Failed on copy of '+pfss_file+' to pfss/pot3d.dat')
   # Read in input map and write it in tp for use with POT3D:
   xvec,yvec,data = ps.rdhdf_2d(br_input_file)
   if (np.max(xvec) > 3.5):
@@ -108,6 +105,16 @@ def run(args):
   else:
     tvec = xvec
     pvec = yvec
+    
+  ntt = len(tvec)+1
+  npp = len(pvec)+1
+  
+  print("=> Copying input file template and input map to pfss directory...")
+  ierr = subprocess.run(['cp', pfss_file, 'pfss/pot3d.dat']).returncode
+  check_error_code(ierr,'Failed on copy of '+pfss_file+' to pfss/pot3d.dat')
+  sed('nt', str(ntt), 'pfss/pot3d.dat')
+  sed('np', str(npp), 'pfss/pot3d.dat')
+  sed('nr', str(int(np.ceil(npp/6.67))), 'pfss/pot3d.dat')
 
 #  Command='grep "nt=" pfss/pot3d.dat'
 #  ierr = subprocess.run(["bash","-c",Command],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
@@ -161,6 +168,9 @@ def run(args):
   print("=> Copying input file template and input map to cs directory...")
   ierr = subprocess.run(['cp', cs_file, 'cs/pot3d.dat']).returncode
   check_error_code(ierr,'Failed on copy of '+cs_file+' to cs/pot3d.dat')
+  sed('nt', str(ntt), 'cs/pot3d.dat')
+  sed('np', str(npp), 'cs/pot3d.dat')
+  sed('nr', str(int(np.ceil(npp/3.6))), 'cs/pot3d.dat')
   ierr = subprocess.run(['cp', 'pfss/br_rss.h5', 'cs/']).returncode
   check_error_code(ierr,'Failed on copy of pfss/br_rss.h5 to cs/')
   print("=> Entering cs directory and modifying input file... ")
@@ -202,11 +212,34 @@ def run(args):
 #  rvec = np.concatenate([rvec1[0:dl],rvec2])
 #  ps.wrhdf_3d(file3, rvec, tvec1, pvec1, data)
 
+def get_sed_command():
+  """Detect which sed command to use and return appropriate arguments.
+  
+  Returns: (sed_cmd, suffix_args) where suffix_args is [''] for BSD sed or [] for GNU sed
+  """
+  # First check if gsed (GNU sed) is available
+  result = subprocess.run(['which', 'gsed'], capture_output=True, text=True)
+  if result.returncode == 0:
+    return ('gsed', [])
+  
+  # Check if system sed is GNU sed by testing --version flag
+  result = subprocess.run(['sed', '--version'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+  if result.returncode == 0:
+    # GNU sed supports --version
+    return ('sed', [])
+  else:
+    # BSD sed (macOS) doesn't support --version and requires '' after -i
+    return ('sed', [''])
+
+# Cache the sed command detection
+_sed_cmd, _sed_suffix = get_sed_command()
+
 def sed(match,value,file):
   match_pattern = '.*' + match + '=.*'
   replace_pattern = '  ' + match + '=' + value
   sed_directive = f's/{match_pattern}/{replace_pattern}/'
-  ierr = subprocess.run(['sed', '-i', sed_directive, file]).returncode
+  cmd = [_sed_cmd, '-i'] + _sed_suffix + [sed_directive, file]
+  ierr = subprocess.run(cmd).returncode
   check_error_code(ierr, 'Failed on sed of '+match+' in '+file)
 
 def check_error_code(ierr,message):
@@ -235,5 +268,9 @@ if __name__ == '__main__':
 #
 # ### Version 1.1.1, 09/03/2025, modified by RC:
 #       - Fixed sed bug.
+#
+# ### Version 1.2.0, 11/05/2025, modified by MS:
+#       - POT3D resolution is now autoset based on the input map size.
+#       - Changed sed command so it can also work on macOS.
 #
 ########################################################################
