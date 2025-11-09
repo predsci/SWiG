@@ -264,10 +264,7 @@ def ch_distance(args):
     print('=> Wrote the contour distance to file: '+args.dfile)
 
 def in_coronal_hole(value,cfval,eps):
-  if (abs(value-cfval) <= eps):
-    return False
-  else:
-    return True
+  return abs(value-cfval) > eps
 
 def interp_old(n,x,xv):
   i = np.searchsorted(x,xv, side='right')-1
