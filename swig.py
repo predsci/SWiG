@@ -111,6 +111,13 @@ def argParsing():
     action='store_false',
     default=True,
     required=False)
+    
+  parser.add_argument('-clearPF',
+    help='Delete PFSS+CS 3D solutions after run.',
+    dest='clearPF',
+    action='store_true',
+    default=False,
+    required=False)    
 
   return parser.parse_args()
 
@@ -164,7 +171,7 @@ def process_map(args, input_map: str, rundir: Path):
   print('=> Running PFSS+CS model with POT3D:')
   Command=f"{swigdir / 'bin' / 'cor_pfss_cs_pot3d.py'} {input_map} -np {args.np} -rss {args.rss} -r1 {args.r1}"
   run_command(Command)
-
+  
   # Analyze and compute required quantities from model.
   print('=> Running magnetic tracing analysis:')
 
@@ -182,6 +189,22 @@ def process_map(args, input_map: str, rundir: Path):
     
   if args.plot_results:
     plot_results(args, swigdir, result_dir)
+    
+  if args.clearPF:
+    print("=> Clearing 3D files in pfss and cs directories...")
+    try:
+      for file in (rundir / "pfss").glob("b[rtp]_pfss.h5"):
+        file.unlink(missing_ok=True)
+      for file in (rundir / "cs").glob("b[rtp]_cs.h5"):
+        file.unlink(missing_ok=True)        
+      for subdir in rundir.glob("r[0-9][0-9][0-9][0-9][0-9][0-9]"):
+        if subdir.is_dir():
+          for file in (subdir / "pfss").glob("b[rtp]_pfss.h5"):
+            file.unlink(missing_ok=True)
+          for file in (subdir / "cs").glob("b[rtp]_cs.h5"):
+            file.unlink(missing_ok=True)      
+    except Exception as e:
+      print(f"Failed to remove files from {rundir}: {e}")
 
   print('=> SWiG complete!')
   print('=> Results can be found here:  ')
@@ -299,5 +322,8 @@ if __name__ == '__main__':
 # ### Version 1.4.0, 09/10/2025, modified by RC:
 #       - Added -sw_model_params to pass solar wind parameters to 
 #         solar wind generator script eswim.py.
+#
+# ### Version 1.5.0, 07/16/2025, modified by RC:
+#       - Added clearPF flag to remove 3D PFSS+CS files to save disk space.
 #
 ########################################################################
