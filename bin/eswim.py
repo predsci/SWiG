@@ -11,7 +11,8 @@ import psi_io as ps
 #           Ronald M. Caplan
 #           Jon A. Linker
 #
-# Version 2.0.0
+# Version 2.1.0 - Optimized solar wind calculations.
+# Version 2.0.0 - Changed temp and rho calculation.
 #
 ########################################################################
 #        Predictive Science Inc.
@@ -50,10 +51,10 @@ def argParsing():
     ## Model type selected
 
     parser.add_argument("-model", type=str,
-                        help='Model type. Allowed model types are: wsa, wsa2, psi',
+                        help='Model type. Allowed model types are: wsa1, wsa2, dchb',
                         required=True)
 
-    ## Parameters for both the WSA and PSI/DCHB model
+    ## Parameters for both the WSA and DCHB model
 
     parser.add_argument("-vslow", type=float,
                         required=False,
@@ -66,7 +67,7 @@ def argParsing():
 
     parser.add_argument("-vmax", type=float,
                         required=False,
-                        help='Maximum wind speed [km/s] (Only used in wsa model)')
+                        help='Maximum wind speed [km/s] (Only used in wsa1 model)')
     parser.add_argument("-c1", type=float,
                         required=False,
                         help='Expansion factor power')
@@ -85,10 +86,10 @@ def argParsing():
 
     ## Parameters unique to the PSI DCHB model
 
-    parser.add_argument("-psi_eps", type=float,
+    parser.add_argument("-dchb_eps", type=float,
                         required=False,
                         help='CH distance parameter')
-    parser.add_argument("-psi_width", type=float,
+    parser.add_argument("-dchb_width", type=float,
                         required=False,
                         help='CH distance width')
 
@@ -111,7 +112,7 @@ def main():
     args = argParsing()
 
     ## Set defaults based on model:
-    if args.model == 'wsa':
+    if args.model == 'wsa1':
       if (args.vslow is None):
         args.vslow = 250.0
       if (args.vfast is None):
@@ -122,7 +123,7 @@ def main():
         args.c1 = 1.0/3.0
       if (args.c2 is None):
         args.c2 = 0.8
-      if (args.c3_i is None):   #INVERSE of new interface
+      if (args.c3_i is None):
         args.c3_i = 0.25
       if (args.c4 is None):
         args.c4 = 4.0
@@ -135,23 +136,23 @@ def main():
         args.c1 = 2.0/9.0
       if (args.c2 is None):
         args.c2 = 0.8
-      if (args.c3_i is None):  # INVERSE of new interface, also RES SEPCIFIC! 1.0 is for 1-degree!
+      if (args.c3_i is None):   #Res-dept (1.0 is for 1-degree)
         args.c3_i = 1.0
       if (args.c4 is None):
         args.c4 = 2.0
       if (args.c5 is None):
         args.c5 = 3.0
-    elif args.model == 'psi':
+    elif args.model == 'dchb':
       if (args.vslow is None):
         args.vslow = 250.0
       if (args.vfast is None):
         args.vfast = 650.0
-      if (args.psi_eps is None):
-        args.psi_eps = 0.05
-      if (args.psi_width is None):
-        args.psi_width = 0.025
+      if (args.dchb_eps is None):
+        args.dchb_eps = 0.05
+      if (args.dchb_width is None):
+        args.dchb_width = 0.025
     else:
-      print('ERROR! Valid model options:  wsa, wsa2, psi')
+      print('ERROR! Valid model options:  wsa1, wsa2, dchb')
       quit()
 
     rad_to_deg = 57.2957795130823
@@ -168,43 +169,33 @@ def main():
     temp = np.empty((NY, NX))
 
     ## Compute the WSA solar wind speed
-    if args.model == 'wsa':
-      for i in range(NY):
-        for j in range(NX):
-            chd_value = data_dchb[i][j]
-            chd_deg = chd_value * rad_to_deg
-            chd_arg = args.c3_i * chd_deg
-            chd_factor = 1.0 - args.c2 * np.exp(-chd_arg ** args.c4)
-            ef_factor = (1.0 + data_expfac[i][j]) ** args.c1
-            v[i][j] = args.vslow + (args.vfast / ef_factor) * chd_factor
-            v[i][j] = min(v[i][j], args.vmax)
+    if args.model == 'wsa1':
+      chd_deg = data_dchb * rad_to_deg
+      chd_arg = args.c3_i * chd_deg
+      chd_factor = 1.0 - args.c2 * np.exp(-chd_arg ** args.c4)
+      ef_factor = (1.0 + data_expfac) ** args.c1
+      v = args.vslow + (args.vfast / ef_factor) * chd_factor
+      v = np.minimum(v, args.vmax)
 
     ## Compute the WSA2 solar wind speed
     elif args.model == 'wsa2':
-       for i in range(NY):
-          for j in range(NX):
-            chd_value = data_dchb[i][j]
-            chd_deg = chd_value * rad_to_deg
-            chd_arg = args.c3_i * chd_deg
-            chd_factor = (1.0 - args.c2 * np.exp(-chd_arg ** args.c4)) ** args.c5
-            ef_factor = (1.0 + data_expfac[i][j]) ** args.c1
-            v[i][j] = args.vslow + (args.vfast / ef_factor) * chd_factor
+      chd_deg = data_dchb * rad_to_deg
+      chd_arg = args.c3_i * chd_deg
+      chd_factor = (1.0 - args.c2 * np.exp(-chd_arg ** args.c4)) ** args.c5
+      ef_factor = (1.0 + data_expfac) ** args.c1
+      v = args.vslow + (args.vfast / ef_factor) * chd_factor
 
-    ## Compute the PSI ad hoc solar wind speed
-    elif args.model == 'psi':
-       for i in range(NY):
-          for j in range(NX):
-            chd_value = data_dchb[i][j]
-            profile = 0.5 * (1.0 + np.tanh((chd_value - args.psi_eps) / args.psi_width))
-            v[i][j] = args.vslow + (args.vfast - args.vslow) * profile
+    ## Compute the PSI ad hoc solar wind speed (DCHB)
+    elif args.model == 'dchb':
+      profile = 0.5 * (1.0 + np.tanh((data_dchb - args.dchb_eps) / args.dchb_width))
+      v = args.vslow + (args.vfast - args.vslow) * profile
 
-    # Compute the ad hoc density and temperature from
-    # pressure balance, as is done in the original MAS_IP
-    vmax = np.amax(v)
-    for i in range(NY):
-      for j in range(NX):
-        rho[i][j] = args.rhofast * (vmax / v[i][j]) ** 2
-        temp[i][j] = args.tfast * args.rhofast / rho[i][j]  
+    ## Compute the ad hoc density and temperature
+    ## For now, we take max(v) since for WSA2 it is needed.
+    ## For time-dept applications, a constant would be better?
+    vmax = np.max(v)
+    rho = args.rhofast * (vmax / v) ** 2
+    temp = args.tfast * args.rhofast / rho
 
     ## Write data to output files:
     ps.wrhdf_2d('vr_r1.h5',  xvec, yvec, v)

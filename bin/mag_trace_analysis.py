@@ -124,9 +124,11 @@ def run(args):
   ntss = len(tvec)
   npss = len(pvec)
   
-  # Set the lower tracing limits and dimensions:
+  # Set the tracing height:
   sed('ch_map_r',str(args.r0_trace),'mapfl.in')
   sed('domain_r_min',str(args.r0_trace),'mapfl.in')
+  
+  # Set the tracing resolution:
   sed('ntss',str((ntss - 1) * 2 + 1),'mapfl.in')
   sed('npss',str((npss - 1) * 2 + 1),'mapfl.in')
 

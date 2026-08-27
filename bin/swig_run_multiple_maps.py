@@ -46,8 +46,8 @@ def argParsing():
   parser.add_argument('-sw_model_params',
     help='Flags to pass to the solar wind model generation script eswim.py.\
           For WSA2:  -vslow <#> -vfast <#> -c1 <#> -c2 <#> -c3_i <#> -c4 <#> -c5 <#>\
-          For WSA:   -vslow <#> -vfast <#> -c1 <#> -c2 <#> -c3_i <#> -c4 <#> -vmax <#>\
-          For PSI:   -vslow <#> -vfast <#> -psi_eps <#> -psi_width <#>\
+          For WSA1:  -vslow <#> -vfast <#> -c1 <#> -c2 <#> -c3_i <#> -c4 <#> -vmax <#>\
+          For DCHB:  -vslow <#> -vfast <#> -dchb_eps <#> -dchb_width <#>\
           For all models:  -rhofast <#> -tfast <#>',
     dest='sw_model_params',
     type=str,
@@ -174,7 +174,9 @@ if __name__ == '__main__':
 # ### Version 2.0.0, 09/18/2025, modified by RC:
 #      - Added new swig options.
 #
-# ### Version 3.0.0, 07/16/2026, modified by RC:
+# ### Version 2.1.0, 07/16/2026, modified by RC:
 #      - Simplified script and now each map is in its own folder.
-#        Maps no longer have idx label.
+#
+# ### Version 3.0.0, 07/22/2026, modified by RC:
+#       - Changed name of PSI model to DCHB and WSA to WSA1.
 #

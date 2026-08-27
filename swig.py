@@ -75,9 +75,9 @@ def argParsing():
 
   parser.add_argument('-sw_model_params',
     help='Flags to pass to the solar wind model generation script eswim.py.\
-          For WSA2:  -vslow <#> -vfast <#> -c1 <#> -c2 <#> -c3_i <#> -c4 <#> -c5 <#>\
-          For WSA:   -vslow <#> -vfast <#> -c1 <#> -c2 <#> -c3_i <#> -c4 <#> -vmax <#>\
-          For PSI:   -vslow <#> -vfast <#> -psi_eps <#> -psi_width <#>\
+          For WSA2:  -wsa2_vslow <#> -wsa2_vfast <#> -wsa2_c1 <#> -wsa2_c2 <#> -wsa2_c3_i <#> -wsa2_c4 <#> -wsa2_c5 <#>\
+          For WSA1:  -wsa1_vslow <#> -wsa1_vfast <#> -wsa1_c1 <#> -wsa1_c2 <#> -wsa1_c3_i <#> -wsa1_c4 <#> -wsa1_vmax <#>\
+          For DCHB:  -dchb_vslow <#> -dchb_vfast <#> -dchb_eps <#> -dchb_width <#>\
           For all models:  -rhofast <#> -tfast <#>',
     dest='sw_model_params',
     type=str,
@@ -165,30 +165,45 @@ def process_map(args, input_map: str, rundir: Path):
   # Get path of the SWiG directory
   swigdir = Path(sys.path[0])
 
-  # [][RC][]: ADD RESOLUTION CHECK HERE, STORE FOR USE IN PFSS/CS/MAPFL/EMP-PARAM-C3
-
   # Run PF model.
   print('=> Running PFSS+CS model with POT3D:')
   Command=f"{swigdir / 'bin' / 'cor_pfss_cs_pot3d.py'} {input_map} -np {args.np} -rss {args.rss} -r1 {args.r1}"
   run_command(Command)
+  
+  # Extract Br at tracing height:
+  br_rtrace,x,y = ps.np_interpolate_slice_from_hdf(rundir / "pfss" / "br_pfss.h5",args.r0_trace,None,None,)
+  ps.wrhdf_2d('br_rtrace.h5', x, y, br_rtrace)
+  run_command(f"{swigdir / 'pot3d' / 'bin' / 'psi_plot2d'} -tp -cmin -25 -cmax 25 -ll -finegrid -unit_label Gauss br_rtrace.h5 -o br_rtrace.png -title 'Br at r={args.r0_trace}'")
   
   # Analyze and compute required quantities from model.
   print('=> Running magnetic tracing analysis:')
 
   Command=f"{swigdir / 'bin' / 'mag_trace_analysis.py'} -r0_trace {args.r0_trace} ."
   run_command(Command)
+  run_command(f"{swigdir / 'pot3d' / 'bin' / 'psi_plot2d'} -tp -cmin -0.002 -cmax 0.002 -ll -finegrid -unit_label Gauss br_r1.h5 -o br_r1.png -cmap psi_blue_red -title 'Br at r={args.r1}'")
 
-  # Generate solar wind model.
-  print('=> Running emperical solar wind model:')
-  Command=f"{swigdir / 'bin' / 'eswim.py'} -dchb dchb_at_r1.h5 -expfac expfac_rss_at_r1.h5 -model {args.sw_model}  {args.sw_model_params}"
-  run_command(Command)
+  # Calcualate solar wind(s):
+  models = args.sw_model.split(',')
+  for model_type in models:
+  
+    os.chdir(rundir)
 
-  # Collect results and plot everything if selected.
-  print('=> Collecting results...')
-  result_dir = collect_results(args, rundir)
+    # Get proper list of params for the current model:
+    model_type = model_type.strip()
+    sw_model_params = filter_sw_model_params(args.sw_model_params, model_type)
+
+    # Generate solar wind model.
+    print(f'=> Calculating emperical solar wind for model {model_type} ...')
+    Command=f"{swigdir / 'bin' / 'eswim.py'} -dchb dchb_at_r1.h5 -expfac expfac_rss_at_r1.h5 -model {model_type} {sw_model_params}"
+    run_command(Command)
+
+    # Collect results and plot everything if selected.
+    print('=> Collecting results...')
+    result_dir = collect_results(args, rundir, model_type)
     
-  if args.plot_results:
-    plot_results(args, swigdir, result_dir)
+    if args.plot_results:
+      os.chdir(result_dir)
+      plot_results(args, swigdir)
     
   if args.clearPF:
     print("=> Clearing 3D files in pfss and cs directories...")
@@ -208,7 +223,7 @@ def process_map(args, input_map: str, rundir: Path):
 
   print('=> SWiG complete!')
   print('=> Results can be found here:  ')
-  print(f'   {result_dir}')
+  print(f'   {rundir}/results')
 
 
 def run_command(Command):
@@ -216,13 +231,12 @@ def run_command(Command):
   ierr = subprocess.run(["bash","-c",Command])
   check_error_code(ierr.returncode,'Failed : '+Command)
 
-def collect_results(args, rundir):
-  result_dir = rundir / 'results'
-  result_dir.mkdir(exist_ok=True)
+def collect_results(args, rundir, model):
+  result_dir = rundir / 'results' / model
+  result_dir.mkdir(parents=True,exist_ok=True)
   idxstr = f"_idx{args.oidx:06d}" if args.oidx is not None else ""
-  files_to_move = ["br_r1.h5", "vr_r1.h5", "t_r1.h5", "rho_r1.h5"]
-  files_to_copy = {"pfss/ofm_r0.h5": "ofm_r0", "pfss/slogq_r0.h5": "slogq_r0", "pfss/br_r0_pfss.h5": "br_r0", "pfss/slogq_rss.h5": "slogq_rss"}
-
+  files_to_move = ["vr_r1.h5", "t_r1.h5", "rho_r1.h5"]
+  files_to_copy = {"br_r1.h5": "br_r1","pfss/ofm_r0.h5": "ofm_r0", "pfss/slogq_r0.h5": "slogq_r0", "pfss/br_r0_pfss.h5": "br_r0", "pfss/slogq_rss.h5": "slogq_rss"}
   for file in files_to_move:
     move_file(file, result_dir / f"{Path(file).stem}{idxstr}.h5")
   for src, dest in files_to_copy.items():
@@ -240,19 +254,18 @@ def copy_file(src, dest):
     check_error_code(ierr, f"Failed to copy {src} to {dest}")
 
 
-def plot_results(args, swigdir, result_dir):
-    os.chdir(result_dir)
+def plot_results(args, swigdir):
     print("=> Plotting results...")
     idxstr = f"_idx{args.oidx:06d}" if args.oidx is not None else ""
     plots = [
-        ('br_r0',     'Gauss',   -20,    20,      'finegrid', 'psi_red_blue'),
+        ('br_r0',     'Gauss',   -25,    25,      'finegrid', 'psi_blue_red'),
         ('slogq_r0',  '"slogQ"', -7,     7,       'finegrid', 'RdBu_r'),
         ('slogq_rss', '"slogQ"', -7,     7,       'finegrid', 'RdBu_r'),
-        ('ofm_r0',    None,      -1,     1,       'finegrid', 'psi_red_blue'),
+        ('ofm_r0',    None,      -1,     1,       'finegrid', 'psi_blue_red'),
         ('t_r1',      'K',       200000, 2000000, 'finegrid', 'hot'),
-        ('rho_r1',    'g/cm^3',  100,    800,     'finegrid', 'gnuplot2_r'),
+        ('rho_r1',    '"#/cm^3"',  100,    800,     'finegrid', 'gnuplot2_r'),
         ('vr_r1',     'km/s',    200,    800,     'finegrid', 'rainbow'),
-        ('br_r1',     'Gauss',   -0.002, 0.002,   'finegrid', 'psi_red_blue')
+        ('br_r1',     'Gauss',   -0.002, 0.002,   'finegrid', 'psi_blue_red')
     ]
 
     for name, label, cmin, cmax, grid, cmap in plots:
@@ -288,6 +301,61 @@ def check_error_code(ierr,message):
     print(message)
     print('Error code of fail : '+str(ierr))
     sys.exit(1)
+    
+def filter_sw_model_params(sw_model_params, model_type):
+  """
+  Filter solar wind model parameters based on model type and remove appropriate prefixes.
+  Args:
+    sw_model_params: String of command-line flags from -sw_model_params
+    model_type: String indicating model type ('wsa1', 'wsa2', or 'dchb')
+  Returns:
+    Filtered string with appropriate prefixes removed
+  """
+  if not sw_model_params:
+    return ''
+  tokens = sw_model_params.split()
+  model_prefixes = {'wsa1': 'wsa1_', 'wsa2': 'wsa2_', 'dchb': 'dchb_'}
+  common_flags = {'rhofast', 'tfast'}
+  model_specific_flags = {
+    'wsa1': {'vslow', 'vfast', 'c1', 'c2', 'c3_i', 'c4', 'vmax'},
+    'wsa2': {'vslow', 'vfast', 'c1', 'c2', 'c3_i', 'c4', 'c5'},
+    'dchb': {'vslow', 'vfast', 'eps', 'width'}
+  }
+  dchb_keep_prefix = {'eps', 'width'}  # dchb flags that keep the prefix
+  if model_type not in model_prefixes:
+    return ''
+  prefix = model_prefixes[model_type]
+  allowed_flags = model_specific_flags[model_type]
+  filtered_tokens = []
+  i = 0
+  while i < len(tokens):
+    token = tokens[i]
+    if token.startswith('-'):
+      flag_name = token[1:]
+      # Keep common flags (rhofast, tfast)
+      if flag_name in common_flags:
+        filtered_tokens.append(token)
+      # Keep prefix-less versions as-is
+      elif flag_name in allowed_flags:
+        filtered_tokens.append(token)
+      # Check for model-specific flags with prefix
+      elif flag_name.startswith(prefix):
+        suffix = flag_name[len(prefix):]
+        if model_type == 'dchb' and suffix in dchb_keep_prefix:
+          # Keep prefix for dchb eps and width
+          filtered_tokens.append(token)
+        else:
+          # Remove prefix for all wsa1/wsa2, and dchb vslow/vfast
+          filtered_tokens.append('-' + suffix)
+      else:
+        i += 1
+        continue
+      # Add the value following the flag
+      if i + 1 < len(tokens) and not tokens[i + 1].startswith('-'):
+        filtered_tokens.append(tokens[i + 1])
+        i += 1
+    i += 1
+  return ' '.join(filtered_tokens)
 
 
 def main():
@@ -325,5 +393,14 @@ if __name__ == '__main__':
 #
 # ### Version 1.5.0, 07/16/2025, modified by RC:
 #       - Added clearPF flag to remove 3D PFSS+CS files to save disk space.
+#
+# ### Version 2.0.0, 07/22/2026, modified by RC:
+#       - Changed name of PSI model to DCHB and WSA to WSA1.
+#
+# ### Version 2.1.0, 08.26.2026, modified by RC:
+#       - Changed model param to allow multiple models to be computed 
+#         in one SWiG run.  Note, the results are now in "results/model"
+#         instead of "results".
+#       - Some fixes to colormaps, unit labels, etc.
 #
 ########################################################################
