@@ -67,11 +67,11 @@ optional arguments:
   -rnum                 Realization number to use for output file names (Default None).
   -rundir               Directory where run will go.
   -np                   Number of MPI processes (ranks)
-  -sw_model             Select solar wind model (Options: wsa, wsa2, psi)
+  -sw_model             Select solar wind model (Options: wsa1, wsa2, dchb)
   -sw_model_params      Flags to pass to the solar wind model generation script eswim.py.
                         WSA2: -vslow <#> -vfast <#> -c1 <#> -c2 <#> -c3_i <#> -c4 <#> -c5 <#>
-                        WSA:  -vslow <#> -vfast <#> -c1 <#> -c2 <#> -c3_i <#> -c4 <#> -vmax <#>
-                        PSI:  -vslow <#> -vfast <#> -psi_eps <#> -psi_width <#> 
+                        WSA1:  -vslow <#> -vfast <#> -c1 <#> -c2 <#> -c3_i <#> -c4 <#> -vmax <#>
+                        DCHB:  -vslow <#> -vfast <#> -dchb_eps <#> -dchb_width <#> 
                         For all models:
                         -rhofast <#> -tfast <#>
   -rss                  Set source surface radius (default 2.5 Rs).
