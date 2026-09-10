@@ -99,7 +99,7 @@ def argParsing():
     required=False)
     
   parser.add_argument('-r0_trace',
-    help='Set inner radius to trace field lines to/from (default is 1.0).',
+    help='Set inner radius to trace field lines to/from (default is 1.0). NOTE: This makes quantities like OFM, slogQ, and expfac at r0_trace, not r0.',
     dest='r0_trace',
     type=float,
     default=1.0,

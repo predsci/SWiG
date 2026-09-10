@@ -45,7 +45,7 @@ def argParsing():
     type=str)
 
   parser.add_argument('-r0_trace',
-    help='Set inner radius to trace field lines to/from (default is rmin of PFSS).',
+    help='Set inner radius to trace field lines to/from (default is rmin of PFSS).  NOTE: This makes quantities like OFM, slogQ, and expfac at r0_trace, not r0.',
     dest='r0_trace',
     type=float,
     default=1.0,
