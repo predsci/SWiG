@@ -8,7 +8,10 @@ import re
 import h5py as h5
 import numpy as np
 import psi_io as ps
-import shutil
+
+# INPUT:  - Map directory (use Path from pathlib to get full path)
+#         - Output directory (default is new local folder called "output_swig")
+#         - [Need rest of swig options to pass to the swig call]
 
 def argParsing():
   parser = argparse.ArgumentParser(description='Run multiple maps through SWiG.')
@@ -46,8 +49,8 @@ def argParsing():
   parser.add_argument('-sw_model_params',
     help='Flags to pass to the solar wind model generation script eswim.py.\
           For WSA2:  -vslow <#> -vfast <#> -c1 <#> -c2 <#> -c3_i <#> -c4 <#> -c5 <#>\
-          For WSA1:  -vslow <#> -vfast <#> -c1 <#> -c2 <#> -c3_i <#> -c4 <#> -vmax <#>\
-          For DCHB:  -vslow <#> -vfast <#> -dchb_eps <#> -dchb_width <#>\
+          For WSA:   -vslow <#> -vfast <#> -c1 <#> -c2 <#> -c3_i <#> -c4 <#> -vmax <#>\
+          For PSI:   -vslow <#> -vfast <#> -psi_eps <#> -psi_width <#>\
           For all models:  -rhofast <#> -tfast <#>',
     dest='sw_model_params',
     type=str,
@@ -82,9 +85,9 @@ def argParsing():
     default=True,
     required=False)
 
-  parser.add_argument('-keep3D',
-    help='Do not delere PFSS+CS 3D solutions',
-    dest='keep3d',
+  parser.add_argument('-rm3d',
+    help='Remove 3D h5 from pfss and cs directories.',
+    dest='rm3d',
     action='store_true',
     default=False,
     required=False)
@@ -107,42 +110,76 @@ def run(args):
     sys.exit(1)
 
   args.swig_path = Path(args.swig_path or f"{sys.path[0]}/../swig.py").resolve()
-  
-  
+
   for h5_file in h5_files:
-  
-    print(f"=> Running map: {h5_file.name}")
-  
-    basename = h5_file.stem
-    
-    if len(basename) >= 6 and basename[-6:].isdigit():
-      idx = basename[-6:]
+    if is_3D_hdf(h5_file):
+      rvec = extract_realization(h5_file)
+      process_file(args, h5_file, rvec)
     else:
-      idx_match = re.search(r"idx(\d{6})", basename)
-      idx = idx_match.group(1) if idx_match else "999999"
-    
-    #Make directory based on map name and go into it:
-    original_cwd = Path.cwd()
-    rundir = Path(basename)
+      process_file(args, h5_file, None)
 
-    command = (
-      f"{args.swig_path} {h5_file} -rundir {rundir} -oidx {idx} "
-      f"-np {args.np} -r0_trace {args.r0_trace} "
-      f"-rss {args.rss} -r1 {args.r1} ")
 
-    if not args.plot_results:
-      command += "-noplot "
-      
-    if args.sw_model_params and args.sw_model_params != "":
-      command += f" -sw_model_params {args.sw_model_params}"
-      
-    if not args.keep3d:
-     command += f" -clearPF "
-      
-    ierr = subprocess.run(["bash", "-c", command])
-    check_error_code_non_crash(ierr.returncode, f"Failed: {command}")
-       
-    os.chdir(original_cwd)        
+def process_file(args, h5_file, rvec):
+  idx_match = re.search(r"idx(\d{6})", str(h5_file))
+  idx = idx_match.group(1) if idx_match else "999999"
+
+  print(f"=> Running map: {h5_file.name}")
+
+  r0_trace_str = f"-r0_trace {args.r0_trace}"
+  
+  params = args.sw_model_params.strip()
+  params_part = f'-sw_model_params "{params}"' if params else ""
+  
+  command = (
+    f'"{args.swig_path}" {h5_file} -rundir "{args.outdir}" -oidx {idx} '
+    f'-np {args.np} -sw_model {args.sw_model} {r0_trace_str} '
+    f'{params_part} -rss {args.rss} -r1 {args.r1} ')
+
+  if not args.plot_results:
+    command += "-noplot "
+
+  ierr = subprocess.run(["bash", "-c", command])
+  check_error_code_non_crash(ierr.returncode, f"Failed: {command}")
+
+  if args.rm3d:
+    print("=> Clearing 3D files in pfss and cs directories")
+    remove_3d_files(args.outdir, rvec)
+
+
+def remove_3d_files(output_dir, rvec):
+  if rvec is not None:
+    for r in rvec:
+      clear_directory(output_dir / f"r{int(r):06d}/pfss")
+      clear_directory(output_dir / f"r{int(r):06d}/cs")
+  else:
+    clear_directory(output_dir / "pfss")
+    clear_directory(output_dir / "cs")
+
+
+def clear_directory(directory):
+  try:
+    h5_files = sorted(directory.glob("*.h5"))
+    for h5_file in h5_files:
+      if is_3D_hdf(h5_file):
+        os.remove(h5_file)
+  except Exception as e:
+    print(f"Failed to remove 3D files from {directory}: {e}")
+
+
+def extract_realization(file):
+  _, _, rvec, _ = ps.rdhdf_3d(file)
+  return np.array(rvec)
+
+
+def is_3D_hdf(file):
+  with h5.File(file, 'r') as h5file:
+    ndims = np.ndim(h5file["Data"])
+    if ndims == 3:
+      return True
+    elif ndims == 2:
+      return False
+    else:
+      check_error_code(10,f"Invalid number of dimensions ({ndims}) in {file}") 
 
 
 def check_error_code_non_crash(ierr,message):
@@ -164,19 +201,10 @@ def main():
   args = argParsing()
   run(args)
 
-
 if __name__ == '__main__':
   main()
 
 # ### Version 1.1.0, 08/19/2025, modified by RC:
 #       - Removed -gpu option as POT3D auto-detects this now.
-#
 # ### Version 2.0.0, 09/18/2025, modified by RC:
 #      - Added new swig options.
-#
-# ### Version 2.1.0, 07/16/2026, modified by RC:
-#      - Simplified script and now each map is in its own folder.
-#
-# ### Version 3.0.0, 07/22/2026, modified by RC:
-#       - Changed name of PSI model to DCHB and WSA to WSA1.
-#
