@@ -85,9 +85,9 @@ def argParsing():
     default=True,
     required=False)
 
-  parser.add_argument('-rm3d',
-    help='Remove 3D h5 from pfss and cs directories.',
-    dest='rm3d',
+  parser.add_argument('-clearPF',
+    help='Delete PFSS+CS 3D solutions after each run.',
+    dest='clearPF',
     action='store_true',
     default=False,
     required=False)
@@ -101,6 +101,7 @@ def run(args):
   
   # Set default output directory if needed.
   args.outdir = Path(args.outdir or "./output_swig").resolve()
+  args.outdir.mkdir(parents=True, exist_ok=True)
 
   # Get all files in input directory
   h5_files = sorted(input_directory.glob("*.h5"))
@@ -112,18 +113,18 @@ def run(args):
   args.swig_path = Path(args.swig_path or f"{sys.path[0]}/../swig.py").resolve()
 
   for h5_file in h5_files:
-    if is_3D_hdf(h5_file):
-      rvec = extract_realization(h5_file)
-      process_file(args, h5_file, rvec)
-    else:
-      process_file(args, h5_file, None)
+      process_file(args, h5_file)
 
 
-def process_file(args, h5_file, rvec):
+def process_file(args, h5_file):
   idx_match = re.search(r"idx(\d{6})", str(h5_file))
   idx = idx_match.group(1) if idx_match else "999999"
 
   print(f"=> Running map: {h5_file.name}")
+  
+  swig_run_name = f"{Path(h5_file).stem}"
+  
+  swig_out_dir = Path(args.outdir) / swig_run_name
 
   r0_trace_str = f"-r0_trace {args.r0_trace}"
   
@@ -131,63 +132,20 @@ def process_file(args, h5_file, rvec):
   params_part = f'-sw_model_params "{params}"' if params else ""
   
   command = (
-    f'"{args.swig_path}" {h5_file} -rundir "{args.outdir}" -oidx {idx} '
+    f'"{args.swig_path}" {h5_file} -rundir "{swig_out_dir}" -oidx {idx} '
     f'-np {args.np} -sw_model {args.sw_model} {r0_trace_str} '
     f'{params_part} -rss {args.rss} -r1 {args.r1} ')
 
   if not args.plot_results:
     command += "-noplot "
+    
+  if args.clearPF:
+    command += "-clearPF "    
+    
+  print(f"=> swig command: {command}")
 
   ierr = subprocess.run(["bash", "-c", command])
-  check_error_code_non_crash(ierr.returncode, f"Failed: {command}")
-
-  if args.rm3d:
-    print("=> Clearing 3D files in pfss and cs directories")
-    remove_3d_files(args.outdir, rvec)
-
-
-def remove_3d_files(output_dir, rvec):
-  if rvec is not None:
-    for r in rvec:
-      clear_directory(output_dir / f"r{int(r):06d}/pfss")
-      clear_directory(output_dir / f"r{int(r):06d}/cs")
-  else:
-    clear_directory(output_dir / "pfss")
-    clear_directory(output_dir / "cs")
-
-
-def clear_directory(directory):
-  try:
-    h5_files = sorted(directory.glob("*.h5"))
-    for h5_file in h5_files:
-      if is_3D_hdf(h5_file):
-        os.remove(h5_file)
-  except Exception as e:
-    print(f"Failed to remove 3D files from {directory}: {e}")
-
-
-def extract_realization(file):
-  _, _, rvec, _ = ps.rdhdf_3d(file)
-  return np.array(rvec)
-
-
-def is_3D_hdf(file):
-  with h5.File(file, 'r') as h5file:
-    ndims = np.ndim(h5file["Data"])
-    if ndims == 3:
-      return True
-    elif ndims == 2:
-      return False
-    else:
-      check_error_code(10,f"Invalid number of dimensions ({ndims}) in {file}") 
-
-
-def check_error_code_non_crash(ierr,message):
-  if ierr > 0:
-    print(' ')
-    print(message)
-    print('Error code of fail : '+str(ierr))
-
+  check_error_code(ierr.returncode, f"Failed: {command}")
 
 def check_error_code(ierr,message):
   if ierr > 0:
@@ -208,3 +166,6 @@ if __name__ == '__main__':
 #       - Removed -gpu option as POT3D auto-detects this now.
 # ### Version 2.0.0, 09/18/2025, modified by RC:
 #      - Added new swig options.
+# ### Version 3.0.0, 11/10/2026, modified by RC:
+#      - Changed output directory structure.
+#      - Renamed rm3d to clearPF to conform to swig flag.

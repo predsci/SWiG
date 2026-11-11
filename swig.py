@@ -126,7 +126,7 @@ def run(args):
   args.input_map = Path(args.input_map).resolve()
 
   # Make rundir and go there
-  args.rundir = Path(args.rundir or f'{args.input_map.stem}_swig_run').resolve()
+  args.rundir = Path(args.rundir or f'{args.input_map.stem}_swig').resolve()
 
   # Add realization number folder if realization number provided
   if args.rnum:
@@ -152,11 +152,6 @@ def run(args):
     shutil.rmtree(temp_dir)
   else:
     # Process 2D file
-    match = re.search(r'r(\d{6})', str(args.input_map))
-    if match:
-      args.rnum = int(match.group(1))
-    rundir = args.rundir / f'r{match.group(1)}' if match else args.rundir
-    rundir.mkdir(exist_ok=True)
     process_map(args, str(args.input_map), rundir)
 
 def process_map(args, input_map: str, rundir: Path):
@@ -173,14 +168,16 @@ def process_map(args, input_map: str, rundir: Path):
   # Extract Br at tracing height:
   br_rtrace,x,y = ps.np_interpolate_slice_from_hdf(rundir / "pfss" / "br_pfss.h5",args.r0_trace,None,None,)
   ps.wrhdf_2d('br_rtrace.h5', x, y, br_rtrace)
-  run_command(f"{swigdir / 'pot3d' / 'bin' / 'psi_plot2d'} -tp -cmin -25 -cmax 25 -ll -finegrid -unit_label Gauss br_rtrace.h5 -o br_rtrace.png -title 'Br at r={args.r0_trace}'")
+  if args.plot_results:
+    run_command(f"{swigdir / 'pot3d' / 'bin' / 'psi_plot2d'} -tp -cmin -25 -cmax 25 -ll -finegrid -unit_label Gauss br_rtrace.h5 -o br_rtrace.png -title 'Br at r={args.r0_trace}'")
   
   # Analyze and compute required quantities from model.
   print('=> Running magnetic tracing analysis:')
 
   Command=f"{swigdir / 'bin' / 'mag_trace_analysis.py'} -r0_trace {args.r0_trace} ."
   run_command(Command)
-  run_command(f"{swigdir / 'pot3d' / 'bin' / 'psi_plot2d'} -tp -cmin -0.002 -cmax 0.002 -ll -finegrid -unit_label Gauss br_r1.h5 -o br_r1.png -cmap psi_blue_red -title 'Br at r={args.r1}'")
+  if args.plot_results:
+    run_command(f"{swigdir / 'pot3d' / 'bin' / 'psi_plot2d'} -tp -cmin -0.002 -cmax 0.002 -ll -finegrid -unit_label Gauss br_r1.h5 -o br_r1.png -cmap psi_blue_red -title 'Br at r={args.r1}'")
 
   # Calcualate solar wind(s):
   models = args.sw_model.split(',')
@@ -402,5 +399,10 @@ if __name__ == '__main__':
 #         in one SWiG run.  Note, the results are now in "results/model"
 #         instead of "results".
 #       - Some fixes to colormaps, unit labels, etc.
+#
+# ### Version 2.2.0, 11.11.2026, modified by RC:
+#       - Changed default output directory name, removed wonky
+#         2D realization folder name stuff.
+#       - Fixed the noplot to avoid all plotting.
 #
 ########################################################################
